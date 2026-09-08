@@ -1,0 +1,56 @@
+@use "sass:color";
+@use "reset" as *;
+@use "variables" as *;
+@use "gutter" as *;
+@use "animate" as *;
+@use "overwrite-el-ui" as *;
+@use "utility" as *;
+
+
+
+
+#app{
+  width: 1920px;
+  left: 50%;
+  top: 0;
+  transform: translate(-50%, 0%) scale(1);
+  -webkit-transform: translate(-50%, 0%);
+  -ms-transform: translate(-50%, 0%);
+  -webkit-transform-origin: top;
+  -ms-transform-origin: top;
+  transform-origin: top;
+  position: absolute;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+
+
+body{
+  background-color: $bg-light;
+}
+.link{
+  color: $color-main;
+  text-decoration: underline;
+}
+
+
+.text-approved{
+  color: $green;
+}
+.text-pending{
+  color: $orange;
+}
+.text-reject{
+  color: $red;
+}
+
+.card-statistic{
+  margin-right: 30px;
+  border: 1px solid color.adjust(black, $alpha: -0.8);
+  padding: 20px;
+  @include border-radius($radius-pc + 5);
+  margin-bottom: 30px;
+  background-color: white;
+}

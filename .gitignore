@@ -1,0 +1,15 @@
+bin/
+bin/linux/
+upload/*
+!upload/.gitkeep
+temp/*
+!temp/.gitkeep
+tmp/
+web/manager/node_modules/
+web/manager/dist/
+web/manager/archive/
+DATABASE_LOCK
+deploy.env
+config/configDatabase.json
+*.exe
+.DS_Store

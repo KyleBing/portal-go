@@ -1,0 +1,10 @@
+node_modules
+web/manager/node_modules
+web/manager/dist
+.git
+.idea
+DATABASE_LOCK
+upload
+temp
+bin
+deploy.env

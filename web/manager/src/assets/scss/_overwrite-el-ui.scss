@@ -1,0 +1,30 @@
+// layout
+.el-header{
+  padding: 0!important;
+}
+
+input[type=number] {
+  padding-right: 0!important;
+}
+
+/*.el-input__inner{
+  padding: 0 0 0 6px !important;
+}*/
+.el-main{
+  padding: 0 !important;
+}
+
+.el-textarea__inner{
+  padding: 10px 13px !important;
+}
+
+
+// DIALOG
+.el-dialog{
+  padding: 30px !important; // 原来的 padding 太小
+}
+
+.el-dialog.is-fullscreen{
+  background-color: #eee;
+}
+
