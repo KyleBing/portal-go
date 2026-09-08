@@ -356,18 +356,6 @@ const MENUS_PRESET: Array<EntityMenu> = [
                 "children": []
             },
             {
-                "name": "邮件",
-                "type": EnumMenuType['菜单'],
-                "path": "/system/email",
-                "match_path": "",
-                "component": "Mail.vue",
-                "visible": EnumMenuVisible['可见'],
-                "redirect": "",
-                "icon": "Message",
-                "isNeedAdminPermission": true,
-                "children": []
-            },
-            {
                 "name": "修改密码",
                 "type": EnumMenuType['菜单'],
                 "path": "/system/change-password",

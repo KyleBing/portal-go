@@ -3,8 +3,17 @@
 </template>
 
 <script setup lang="ts">
-import * as echarts from 'echarts'
 import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
+import * as echarts from 'echarts/core'
+import { PieChart } from 'echarts/charts'
+import {
+    TooltipComponent,
+    TitleComponent,
+} from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+import type { EChartsType } from 'echarts/core'
+
+echarts.use([PieChart, TooltipComponent, TitleComponent, CanvasRenderer])
 
 const props = withDefaults(defineProps<{
     data?: Array<{ value: number, name: string }>,
@@ -17,7 +26,7 @@ const props = withDefaults(defineProps<{
 })
 
 const BarDom = ref<HTMLElement | null>(null)
-const chart = ref<echarts.ECharts | null>(null)
+const chart = ref<EChartsType | null>(null)
 const option = ref<any>(null)
 const width = ref('500px')
 
@@ -38,7 +47,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-    window.onresize = null
+    chart.value?.dispose()
+    chart.value = null
 })
 
 function resetData(newValue: Array<{ value: number, name: string }>) {
@@ -89,7 +99,7 @@ function initChart() {
                     itemStyle: {
                         shadowBlur: 10,
                         shadowOffsetX: 0,
-                        shadowColor: color.adjust('black', { alpha: -0.8 })
+                        shadowColor: 'rgba(0, 0, 0, 0.2)'
                     }
                 }
             }
@@ -120,5 +130,4 @@ defineExpose({
 </script>
 
 <style lang="scss" scoped>
-@use "sass:color";
 </style>

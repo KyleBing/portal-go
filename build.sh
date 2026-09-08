@@ -199,6 +199,7 @@ ok "✅" "init.sql OK"
 
 if [[ "${DEPLOY_FRONTEND}" == "1" && -d web/manager/dist ]]; then
   status "📤" "Uploading manager frontend …"
+  # nginx /manager/ 已反代到 portal-go 内嵌静态目录
   rsync -az --delete web/manager/dist/ "${DEST}web/manager/dist/"
   ok "✅" "Frontend upload OK"
 fi

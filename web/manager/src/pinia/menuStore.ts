@@ -6,7 +6,6 @@ import {Router, RouteRecordRaw} from "vue-router";
 import {EntityMenu, EnumMenuType} from "@/entity/Menu.ts";
 import {MENUS_PRESET} from "@/MENUS_PRESET.ts";
 import {getAuthorization} from "@/utility.ts";
-import Layout from "@/layout/Layout.vue";
 
 export const useMenuStore = defineStore('menuStore', {
     state: () => ({
@@ -46,9 +45,6 @@ export const useMenuStore = defineStore('menuStore', {
             this.flatMenuArray = flatMenuArray
             this.flatMenuPathNameMap = new Map(flatMenuArray.map(item => [item.path, item.name]))
 
-            // console.log(this.flatMenuArray)
-            // console.log(this.flatMenuPathNameMap)
-
             // 平化菜单数据
             function recursionMenuData(menuArray: Array<EntityMenu>){
                 let tempArray: Array<EntityMenu> = []
@@ -66,16 +62,14 @@ export const useMenuStore = defineStore('menuStore', {
             }
         },
         refreshRoute(router: Router){
-            console.log(getAuthorization()?.group_id)
             this.menus = filterMenuData(MENUS_PRESET)
-            console.log(this.menus)
-            // 注册路由
+            // Layout 异步加载，避免拖慢首包
             router.addRoute({
                 name: 'index',
                 path: '/',
                 redirect: '/diary',
-                component: Layout,
-                meta: { // meta 字段用于 navMenu 显示菜单
+                component: () => import('@/layout/Layout.vue'),
+                meta: {
                     title: '主页',
                     isShowInMenu: false,
                 },

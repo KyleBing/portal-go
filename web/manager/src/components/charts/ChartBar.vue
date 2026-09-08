@@ -3,8 +3,18 @@
 </template>
 
 <script setup lang="ts">
-import * as echarts from 'echarts'
 import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
+import * as echarts from 'echarts/core'
+import { BarChart } from 'echarts/charts'
+import {
+    GridComponent,
+    TooltipComponent,
+    TitleComponent,
+} from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+import type { EChartsType } from 'echarts/core'
+
+echarts.use([BarChart, GridComponent, TooltipComponent, TitleComponent, CanvasRenderer])
 
 const props = withDefaults(defineProps<{
     data?: Array<{ value: number, name: string }>,
@@ -17,7 +27,7 @@ const props = withDefaults(defineProps<{
 })
 
 const BarDom = ref<HTMLElement | null>(null)
-const chart = ref<echarts.ECharts | null>(null)
+const chart = ref<EChartsType | null>(null)
 const option = ref<any>(null)
 const width = ref('500px')
 
@@ -38,7 +48,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-    window.onresize = null
+    chart.value?.dispose()
+    chart.value = null
 })
 
 function resetData(newValue: Array<{ value: number, name: string }>) {

@@ -22,15 +22,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, defineAsyncComponent } from 'vue';
 import statisticApi from "@/api/statisticApi";
 import { getAuthorization } from "@/utility";
-import StatisticUserWordCount from "@/view/Statistics/StatisticUserWordCount.vue";
-import StatisticUserDiaryCount from "@/view/Statistics/StatisticUserDiaryCount.vue";
 import StatisticCountCard from "@/view/Statistics/StatisticCountCard.vue";
 import Container from "@/layout/Container.vue";
 import Toolbar from "@/layout/Toolbar.vue";
 import Content from "@/layout/Content.vue";
+
+const StatisticUserWordCount = defineAsyncComponent(() => import("@/view/Statistics/StatisticUserWordCount.vue"));
+const StatisticUserDiaryCount = defineAsyncComponent(() => import("@/view/Statistics/StatisticUserDiaryCount.vue"));
 
 interface StatisticItem {
     name: string;
