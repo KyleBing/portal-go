@@ -6,6 +6,10 @@ import { ElMessage } from "element-plus";
  * __路由命名规则__
  * 路由  名为 AaaaBbbbCccc
  * path 名为 aaaa-bbbb-cccc
+ *
+ * 业务菜单路由由 menuStore.refreshRoute 动态注册；
+ * 这里只放登录等固定页。404 catch-all 也在 refreshRoute 末尾注册，
+ * 避免抢在动态路由前面。
  */
 
 const ROUTE_FIXED: Array<RouteRecordRaw> =  [
@@ -20,35 +24,15 @@ const ROUTE_FIXED: Array<RouteRecordRaw> =  [
         component: () => import('../view/Logout.vue')
     },
     {
-        name: 'NotFound404', path: '/:pathMatch(.*)*',
-        meta: {isAdmin: false, title: '404', isShowInMenu: false, icon: 'UserFilled',},
-        component: () => import('../view/Util/NotFound404.vue')
-    },
-    {
         name: 'Disadvantage', path: '/disadvantage',
         meta: {isAdmin: false, title: '404', isShowInMenu: false, icon: 'UserFilled',},
         component: () => import('../view/Util/NotFound404.vue')
     },
 ]
 
-const ROUTE_FRAME: Array<RouteRecordRaw> =  [
-    {
-        name: 'Index',
-        path: '/',
-        redirect: '/diary/statistic',
-        component: () => import('../layout/Layout.vue'),
-        meta: { // meta 字段用于 navMenu 显示菜单
-            title: '主页',
-            isShowInMenu: false,
-        },
-        children: []
-    },
-    ...ROUTE_FIXED,
-]
-
 const router = createRouter({
     history: createWebHashHistory(),
-    routes: ROUTE_FRAME
+    routes: ROUTE_FIXED
 })
 
 // 路由守卫

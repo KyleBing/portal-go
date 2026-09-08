@@ -7,6 +7,9 @@ import {EntityMenu, EnumMenuType} from "@/entity/Menu.ts";
 import {MENUS_PRESET} from "@/MENUS_PRESET.ts";
 import {getAuthorization} from "@/utility.ts";
 
+const LAYOUT_ROUTE_NAME = 'index'
+const NOT_FOUND_ROUTE_NAME = 'NotFound404'
+
 export const useMenuStore = defineStore('menuStore', {
     state: () => ({
         menus: [] as Array<RouteRecordRaw>,
@@ -16,19 +19,18 @@ export const useMenuStore = defineStore('menuStore', {
     getters: {
         menuExist(state): Array<RouteRecordRaw>{
             if (state.menus.length === 0){
-                return MENUS_PRESET
+                return MENUS_PRESET as unknown as Array<RouteRecordRaw>
             } else {
                 return state.menus
             }
         },
         // 返回以 path 为 key 的路由 map
         menuExistMapLevel1(state){
-            let menusCache = MENUS_PRESET
-            if (state.menus.length === 0){
-                return getMenuMapLevel1(menusCache)
-            } else {
-                return getMenuMapLevel1(state.menus)
-            }
+            const menusCache = state.menus.length === 0
+                ? (MENUS_PRESET as unknown as Array<RouteRecordRaw>)
+                : state.menus
+            return getMenuMapLevel1(menusCache)
+
             function getMenuMapLevel1(menuList: Array<RouteRecordRaw>){
                 let tempMap = new Map()
                 menuList.forEach(item => {
@@ -40,20 +42,19 @@ export const useMenuStore = defineStore('menuStore', {
     },
     actions: {
         generateMenuArrayAndMap(){
-            let menusCache = MENUS_PRESET
-            let flatMenuArray = recursionMenuData(menusCache)
+            // 深拷贝，避免 delete children 破坏 MENUS_PRESET（登录后 refreshRoute 会再读它）
+            const menusCache = structuredClone(MENUS_PRESET)
+            const flatMenuArray = recursionMenuData(menusCache)
             this.flatMenuArray = flatMenuArray
             this.flatMenuPathNameMap = new Map(flatMenuArray.map(item => [item.path, item.name]))
 
-            // 平化菜单数据
             function recursionMenuData(menuArray: Array<EntityMenu>){
                 let tempArray: Array<EntityMenu> = []
                 menuArray.forEach(item => {
                     if (item.children && item.children.length > 0){
                         tempArray = tempArray.concat(recursionMenuData(item.children))
-                        // 添加本身，并去除 children 属性
-                        delete item.children
-                        tempArray.push(item)
+                        const {children: _children, ...rest} = item
+                        tempArray.push(rest as EntityMenu)
                     } else {
                         tempArray.push(item)
                     }
@@ -62,31 +63,50 @@ export const useMenuStore = defineStore('menuStore', {
             }
         },
         refreshRoute(router: Router){
-            this.menus = filterMenuData(MENUS_PRESET)
-            // Layout 异步加载，避免拖慢首包
+            this.menus = filterMenuData(structuredClone(MENUS_PRESET))
+
+            // 先移除再添加，避免重复 / 空壳 Index 与 catch-all 抢匹配
+            if (router.hasRoute(LAYOUT_ROUTE_NAME)) {
+                router.removeRoute(LAYOUT_ROUTE_NAME)
+            }
+            if (router.hasRoute(NOT_FOUND_ROUTE_NAME)) {
+                router.removeRoute(NOT_FOUND_ROUTE_NAME)
+            }
+
             router.addRoute({
-                name: 'index',
+                name: LAYOUT_ROUTE_NAME,
                 path: '/',
-                redirect: '/diary',
+                redirect: '/diary/statistic',
                 component: () => import('@/layout/Layout.vue'),
                 meta: {
                     title: '主页',
                     isShowInMenu: false,
                 },
                 children: this.menus
-            },)
+            })
+
+            // 404 必须最后注册，否则会吃掉尚未就绪的动态路由
+            router.addRoute({
+                name: NOT_FOUND_ROUTE_NAME,
+                path: '/:pathMatch(.*)*',
+                meta: {isAdmin: false, title: '404', isShowInMenu: false, icon: 'UserFilled'},
+                component: () => import('@/view/Util/NotFound404.vue'),
+            })
         }
     }
 })
 
-let RouterModules = import.meta.glob("/src/view/**/*.vue");
+const RouterModules = import.meta.glob("/src/view/**/*.vue");
 
 // 从菜单数据生成路由数组
 function getMenuFromMenuData(menuData: EntityMenu): RouteRecordRaw{
+    const viewPath = menuData.component
+        ? `/src/view/${menuData.component}`
+        : ''
     return {
         name: menuData.path,
         path: menuData.path,
-        redirect: menuData.redirect,
+        redirect: menuData.redirect || undefined,
         meta: {
             icon: menuData.icon,
             isShowInMenu: menuData.visible === 1,
@@ -94,14 +114,15 @@ function getMenuFromMenuData(menuData: EntityMenu): RouteRecordRaw{
             perm: menuData.perm,
             matchedMenuPath: menuData.match_path,
         },
-        component: RouterModules[`/src/view/${menuData.component}`],
+        // 目录节点无页面组件，仅作 redirect / 菜单分组
+        component: viewPath ? RouterModules[viewPath] : undefined,
         children:
-            menuData.children && menuData.children.length > 0? filterMenuData(menuData.children) : []
+            menuData.children && menuData.children.length > 0 ? filterMenuData(menuData.children) : []
     }
 }
 
 // 根据用户过滤菜单
-function filterMenuData(menus: Array<EntityMenu>): Array<EntityMenu> {
+function filterMenuData(menus: Array<EntityMenu>): Array<RouteRecordRaw> {
     return menus
         .filter(item => {
             let auth = getAuthorization()

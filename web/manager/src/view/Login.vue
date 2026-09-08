@@ -110,9 +110,10 @@ function login() {
             })
 
             useMenuStore().refreshRoute(router)
+            useMenuStore().generateMenuArrayAndMap()
 
             nextTick(() => {
-                router.push('/')
+                router.replace('/diary/statistic')
             })
         })
         .catch(function(err) {
