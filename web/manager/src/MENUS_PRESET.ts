@@ -379,6 +379,18 @@ const MENUS_PRESET: Array<EntityMenu> = [
                 "isNeedAdminPermission": false,
                 "children": []
             },
+            {
+                "name": "API 文档",
+                "type": EnumMenuType['菜单'],
+                "path": "/system/api-doc",
+                "match_path": "",
+                "component": "System/ApiDoc.vue",
+                "visible": EnumMenuVisible['可见'],
+                "redirect": "",
+                "icon": "Document",
+                "isNeedAdminPermission": false,
+                "children": []
+            },
         ]
     }
 ]

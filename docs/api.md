@@ -2,6 +2,7 @@
 
 与原 Node Portal 兼容。业务路由同时挂在 **`/`** 与 **`/portal/`** 下；线上 Nginx 通常走 `/portal/…`。下文路径均写 `/portal` 前缀。
 
+交互式文档（推荐）：Manager → **系统配置 → API 文档**（`#/system/api-doc`）。  
 管理后台静态资源：`GET /manager/*`（非 API）。
 
 ---

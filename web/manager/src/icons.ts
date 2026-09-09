@@ -2,6 +2,7 @@ import type { App } from 'vue'
 import {
     Apple,
     ArrowDown,
+    ArrowRight,
     Avatar,
     Box,
     Check,
@@ -50,6 +51,7 @@ import {
 const icons: Record<string, object> = {
     Apple,
     ArrowDown,
+    ArrowRight,
     Avatar,
     Box,
     Check,
