@@ -119,7 +119,7 @@
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
 | GET | `/list` | Opt | 未绑定邀请码；非管理员仅 `is_shared=0` |
-| GET | `/manage` | Admin | Manager 全量列表（联表用户）；Query `status=all\|unused\|used`，返回 `list` + `summary` |
+| GET | `/manage` | Admin | Manager 列表（联表用户）；Query `status=all\|unused\|used`、`pageNo`、`pageSize`；返回 `list` + `pager` + `summary` |
 | POST | `/generate` | Admin | 生成 |
 | POST | `/mark-shared` | Admin | Body `id` |
 | DELETE | `/delete` | Admin | Query `id` |
@@ -325,12 +325,15 @@
 
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
-| POST | `/upload` | A | multipart：`file`；form `note` |
+| POST | `/upload` | A | multipart：`file`；form `note`；落盘 `upload/{uid}/` |
 | POST | `/modify` | A | `fileId,description` |
 | DELETE | `/delete` | A | `fileId` |
-| GET | `/list` | A | `pageNo,pageSize,keywords`(JSON), `dateFilter`(YYYYMM) |
+| GET | `/list` | A | `pageNo,pageSize,keywords`(JSON), `dateFilter`(YYYYMM)；项含 `download_url` |
+| GET | `/download` | A | Query `fileId`；鉴权后按 uid 校验并 `ServeFile` |
 
-文件落盘在服务端 `upload/`，文件名经 `filepath.Base` 消毒。
+文件落盘在服务端 `upload/{uid}/`，文件名经 `filepath.Base` 消毒；下载须带 `Diary-Token` / `Diary-Uid`。
+
+**端对端互传（WebRTC）**：文件字节只走浏览器 DataChannel，**不经本站带宽**。`portal-ws`（`/ws`）仅转发房间信令：`rtc-create|join|leave|peers|offer|answer|ice`（需登录 query `token`+`uid`）。仅 STUN，无 TURN/文件中继；跨公网 NAT 可能失败。
 
 ---
 
@@ -358,7 +361,7 @@
 | PUT | `/modify` | Admin | 按 `name` 更新 |
 | DELETE | `/delete` | Admin | `name` |
 
-实时点赞还可走 WebSocket：`ws://host:9999/`（生产经 Nginx `/ws`）。
+实时点赞还可走 WebSocket：`ws://host:9999/`（生产经 Nginx `/ws`）。同通道可做 **WebRTC 信令**（`rtc-*`，需登录），**不中继文件字节**。
 
 ---
 

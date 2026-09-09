@@ -7,62 +7,50 @@
                         <input type="file" ref="inputUpload" @change="inputFileChange"/>
                     </ElFormItem>
                     <ElFormItem label="文件描述">
-                        <ElInput type="text" v-model="fileDescription"></ElInput>
+                        <ElInput type="text" v-model="fileDescription"/>
                     </ElFormItem>
                     <ElFormItem>
-                        <ElButton icon="Upload" type="success" @click="uploadFile">确认添加</ElButton>
+                        <ElButton icon="Upload" type="success" :loading="uploading" @click="uploadFile">上传</ElButton>
                     </ElFormItem>
                 </ElForm>
             </template>
-            <template #center>
-            </template>
             <template #right>
+                <ElButton type="primary" plain @click="$router.push('/file/transfer')">端对端互传</ElButton>
             </template>
         </Toolbar>
 
         <Content padding="0">
-            <ElRow :gutter="10">
-                <ElCol :span="24">
-                    <ElTable
-                        class="table-narrow"
-                        size="small"
-                        :height="projectStore.contentInsets.heightContent - 130"
-                        stripe
-                        :data="tableData"
-                        v-loading="isLoading"
-                    >
-                        <ElTableColumn prop="id" label="ID" width="80"/>
-                        <ElTableColumn prop="name_original" label="原文件名" width="400"/>
-                        <ElTableColumn prop="description" label="描述"/>
-                        <ElTableColumn prop="type" width="180" label="文件类型"/>
-                        <ElTableColumn prop="path" label="路径">
-                            <template #default="scope">
-                                <a target="_blank" :href="`${BASE_URL}${scope.row.name}`">{{scope.row.name}}</a>
-                            </template>
-                        </ElTableColumn>
-                        <ElTableColumn align="right" width="120" prop="size" label="文件大小">
-                            <template #default="scope">
-                                <span>{{(scope.row.size / 1024).toFixed(0)}}kb</span>
-                            </template>
-                        </ElTableColumn>
-                        <ElTableColumn sortable align="center" width="200" prop="date_create" label="添加时间">
-                            <template #default="scope">
-                                <TableListDate :dates="[scope.row.date_create]" :names="['创建']"/>
-                            </template>
-                        </ElTableColumn>
-
-                        <ElTableColumn align="center" width="300" label="操作">
-                            <template #default="scope">
-                                <ElButton size="small" plain class="clipboard" :data-clipboard="`${BASE_URL}${scope.row.name}`" icon="CopyDocument" type="primary">复制文件地址</ElButton>
-                                <ElButton size="small" plain @click="goDelete(scope.row)" type="danger" icon="delete">删除</ElButton>
-                            </template>
-                        </ElTableColumn>
-                    </ElTable>
-
-                </ElCol>
-            </ElRow>
+            <ElTable
+                class="table-narrow"
+                size="small"
+                :height="projectStore.contentInsets.heightContent - 130"
+                stripe
+                :data="tableData"
+                v-loading="isLoading"
+            >
+                <ElTableColumn prop="id" label="ID" width="70"/>
+                <ElTableColumn prop="name_original" label="原文件名" min-width="180"/>
+                <ElTableColumn prop="description" label="描述" min-width="140"/>
+                <ElTableColumn prop="type" width="140" label="类型"/>
+                <ElTableColumn prop="path" label="路径" min-width="160" show-overflow-tooltip/>
+                <ElTableColumn align="right" width="100" prop="size" label="大小">
+                    <template #default="{ row }">
+                        <span>{{ formatSize(row.size) }}</span>
+                    </template>
+                </ElTableColumn>
+                <ElTableColumn sortable align="center" width="170" prop="date_create" label="添加时间">
+                    <template #default="{ row }">
+                        <TableListDate :dates="[row.date_create]" :names="['创建']"/>
+                    </template>
+                </ElTableColumn>
+                <ElTableColumn align="center" width="260" label="操作" fixed="right">
+                    <template #default="{ row }">
+                        <ElButton size="small" plain type="primary" @click="download(row)">下载</ElButton>
+                        <ElButton size="small" plain type="danger" icon="Delete" @click="goDelete(row)">删除</ElButton>
+                    </template>
+                </ElTableColumn>
+            </ElTable>
         </Content>
-        <!--  PAGINATION  -->
         <FooterPagination
             :pager-option="pager"
             @size-change="getFileList"
@@ -74,56 +62,50 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import fileManagerApi from "@/api/fileManagerApi"
-import ClipboardJS from 'clipboard'
-import {useProjectStore} from "@/pinia";
-import Container from "@/layout/Container.vue";
-import Toolbar from "@/layout/Toolbar.vue";
-import { getAuthorization } from "@/utility";
-import FooterPagination from "@/layout/FooterPagination.vue";
-import TableListDate from "@/components/TableListDate.vue";
-import Content from "@/layout/Content.vue";
+import fileManagerApi from '@/api/fileManagerApi'
+import { useProjectStore } from '@/pinia'
+import Container from '@/layout/Container.vue'
+import Toolbar from '@/layout/Toolbar.vue'
+import FooterPagination from '@/layout/FooterPagination.vue'
+import TableListDate from '@/components/TableListDate.vue'
+import Content from '@/layout/Content.vue'
+import { getAuthorization } from '@/utility'
+import { downloadWithAuth } from '@/utils/webrtcTransfer'
 
 interface FileInfo {
     id: number
     name_original: string
     description: string
     type: string
-    name: string
+    path: string
     size: number
     date_create: string
+    download_url?: string
 }
 
 interface Pager {
-    total: number,
-    pageNo: number,
+    total: number
+    pageNo: number
     pageSize: number
 }
 
 const projectStore = useProjectStore()
-
-const BASE_URL = 'http://kylebing.cn/'
 const isLoading = ref(false)
-const editingUid = ref<number | null>(null)
+const uploading = ref(false)
 const tableData = ref<FileInfo[]>([])
-const modalEdit = ref(false)
-const isAdmin = ref(false)
 const currentFile = ref<File | null>(null)
 const fileDescription = ref('')
 const inputUpload = ref<HTMLInputElement | null>(null)
-const clipboard = ref<ClipboardJS | null>(null)
+const pager = ref<Pager>({ pageSize: 30, pageNo: 1, total: 0 })
 
-const pager = ref<Pager>({
-    pageSize: 30,
-    pageNo: 1,
-    total: 0
-})
+function formatSize(n: number) {
+    if (!n) return '0 KB'
+    return `${(n / 1024).toFixed(0)} KB`
+}
 
-const inputFileChange = (event: Event) => {
+function inputFileChange(event: Event) {
     const target = event.target as HTMLInputElement
-    if (target.files && target.files.length > 0) {
-        currentFile.value = target.files[0]
-    }
+    currentFile.value = target.files?.[0] || null
 }
 
 function uploadFile() {
@@ -135,109 +117,53 @@ function uploadFile() {
         ElMessage.warning('未填写文件描述')
         return
     }
-
-    const requestData = new FormData()
-    requestData.append('file', currentFile.value)
-    requestData.append('note', fileDescription.value)
-
-    fileManagerApi.upload(requestData)
-        .then(res => {
-            ElMessage.success(res.message)
+    const fd = new FormData()
+    fd.append('file', currentFile.value)
+    fd.append('note', fileDescription.value)
+    uploading.value = true
+    fileManagerApi.upload(fd)
+        .then((res: any) => {
+            ElMessage.success(res.message || '上传成功')
             currentFile.value = null
             fileDescription.value = ''
+            if (inputUpload.value) inputUpload.value.value = ''
             getFileList()
         })
-        .catch(error => {
-            console.error('Upload failed:', error)
-        })
+        .finally(() => { uploading.value = false })
 }
 
 function getFileList() {
     isLoading.value = true
-    const params = {
-        pageNo: pager.value.pageNo,
-        pageSize: pager.value.pageSize
+    fileManagerApi.list({ pageNo: pager.value.pageNo, pageSize: pager.value.pageSize })
+        .then((res: any) => {
+            tableData.value = res.data || []
+        })
+        .finally(() => { isLoading.value = false })
+}
+
+async function download(row: FileInfo) {
+    const auth = getAuthorization()
+    if (!auth?.token || !auth?.uid) {
+        ElMessage.error('未登录')
+        return
     }
-    fileManagerApi
-        .list(params)
-        .then(res => {
-            tableData.value = res.data
-            isLoading.value = false
-        })
-        .catch(error => {
-            isLoading.value = false
-            console.error('Failed to get file list:', error)
-        })
+    const url = row.download_url || `/portal/file-manager/download?fileId=${row.id}`
+    try {
+        await downloadWithAuth(url, auth.token, auth.uid, row.name_original || 'file')
+    } catch {
+        ElMessage.error('下载失败')
+    }
 }
 
-const goDelete = (fileInfo: FileInfo) => {
-    ElMessageBox.confirm(
-        `删除记录 ${fileInfo.name_original}`,
-        '删除',
-        {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning'
-        }
-    ).then(() => {
-        const requestData = {
-            fileId: fileInfo.id
-        }
-        fileManagerApi.delete(requestData)
-            .then(() => {
-                ElMessage.success('删除成功')
-                getFileList()
-            })
-            .catch(error => {
-                console.error('Delete failed:', error)
-            })
-    }).catch(() => {
-        // User cancelled the deletion
-    })
+function goDelete(fileInfo: FileInfo) {
+    ElMessageBox.confirm(`删除记录 ${fileInfo.name_original}`, '删除', { type: 'warning' })
+        .then(() => fileManagerApi.delete({ fileId: fileInfo.id }))
+        .then(() => {
+            ElMessage.success('删除成功')
+            getFileList()
+        })
+        .catch(() => {})
 }
 
-onMounted(() => {
-    getFileList()
-    isAdmin.value = getAuthorization().email === 'kylebing@163.com'
-    
-    // Initialize clipboard
-    clipboard.value = new ClipboardJS('.clipboard', {
-        text: trigger => trigger.getAttribute('data-clipboard') || ''
-    })
-    
-    clipboard.value.on('success', () => {
-        ElMessage.success('复制成功')
-    })
-})
+onMounted(getFileList)
 </script>
-
-<style scoped lang="scss">
-@use "../../assets/scss/variables" as *;
-@use "../../assets/scss/utility" as *;
-@use "../../assets/scss/font" as *;
-
-.tool-bar{}
-
-.thumbnail{
-    width: 50px;
-    padding: 2px;
-    @include border-radius(2px);
-    border: 1px solid $color-border;
-    img{
-        display: block;
-        width: 100%;
-    }
-}
-
-:deep(.el-button) {
-    margin-right: 8px;
-    
-    &:last-child {
-        margin-right: 0;
-    }
-    
-    &.clipboard {
-        margin-left: 8px;
-    }
-}
-</style>

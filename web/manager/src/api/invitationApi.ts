@@ -3,7 +3,7 @@ import { request } from './request'
 export type InvitationStatus = 'all' | 'unused' | 'used'
 
 export default {
-    manage(params: { status?: InvitationStatus } = {}) {
+    manage(params: { status?: InvitationStatus; pageNo?: number; pageSize?: number } = {}) {
         return request('get', params, null, false, 'invitation/manage')
     },
     list() {

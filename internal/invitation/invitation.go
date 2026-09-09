@@ -56,8 +56,8 @@ func handleList(c *gin.Context) {
 	response.Success(c, data, "请求成功")
 }
 
-// handleManage returns all invitation codes for the manager console,
-// including used ones with the bound user profile.
+// handleManage returns invitation codes for the manager console,
+// including used ones with the bound user profile. Supports pageNo/pageSize.
 func handleManage(c *gin.Context) {
 	user, errMsg := middleware.VerifyAuthorization(c)
 	if errMsg != "" {
@@ -74,6 +74,28 @@ func handleManage(c *gin.Context) {
 		return
 	}
 	status := c.Query("status") // all | unused | used
+	pageNo := util.AtoiDefault(c.Query("pageNo"), 1)
+	pageSize := util.AtoiDefault(c.Query("pageSize"), 20)
+	if pageSize < 1 {
+		pageSize = 20
+	}
+	start := apihelper.PageStart(pageNo, pageSize)
+
+	where := ""
+	switch status {
+	case "unused":
+		where = ` WHERE i.binding_uid IS NULL`
+	case "used":
+		where = ` WHERE i.binding_uid IS NOT NULL`
+	}
+
+	var filteredTotal int64
+	countSQL := `SELECT COUNT(*) FROM ` + table + ` i` + where
+	if err := diary.QueryRow(countSQL).Scan(&filteredTotal); err != nil {
+		response.Error(c, err.Error(), err.Error())
+		return
+	}
+
 	sqlBuf := `
 		SELECT
 			i.id, i.date_create, i.date_register, i.binding_uid, i.is_shared,
@@ -81,16 +103,11 @@ func handleManage(c *gin.Context) {
 			u.email AS binding_email,
 			u.username AS binding_username
 		FROM ` + table + ` i
-		LEFT JOIN users u ON u.uid = i.binding_uid`
-	switch status {
-	case "unused":
-		sqlBuf += ` WHERE i.binding_uid IS NULL`
-	case "used":
-		sqlBuf += ` WHERE i.binding_uid IS NOT NULL`
-	}
-	sqlBuf += ` ORDER BY i.date_create DESC`
+		LEFT JOIN users u ON u.uid = i.binding_uid` + where + `
+		ORDER BY i.date_create DESC
+		LIMIT ?, ?`
 
-	data, err := apihelper.QueryMaps(diary, sqlBuf)
+	data, err := apihelper.QueryMaps(diary, sqlBuf, start, pageSize)
 	if err != nil {
 		response.Error(c, err.Error(), err.Error())
 		return
@@ -107,6 +124,11 @@ func handleManage(c *gin.Context) {
 	util.UpdateUserLastLoginTime(user.UID)
 	response.Success(c, gin.H{
 		"list": data,
+		"pager": gin.H{
+			"pageNo":   pageNo,
+			"pageSize": pageSize,
+			"total":    filteredTotal,
+		},
 		"summary": gin.H{
 			"total":         total,
 			"unused":        unused,

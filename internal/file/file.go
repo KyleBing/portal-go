@@ -3,8 +3,10 @@ package file
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/KyleBing/portal-go/internal/db"
@@ -24,10 +26,24 @@ func Register(r *gin.RouterGroup) {
 	r.POST("/modify", handleModify)
 	r.DELETE("/delete", handleDelete)
 	r.GET("/list", handleList)
+	r.GET("/download", handleDownload)
 }
 
 func uploadDir() string {
 	return filepath.Join(setup.ProjectRoot(), destFolder)
+}
+
+func absUnderUpload(rel string) (string, error) {
+	rel = filepath.Clean(rel)
+	if rel == "." || strings.HasPrefix(rel, "..") {
+		return "", fmt.Errorf("非法路径")
+	}
+	abs := filepath.Join(setup.ProjectRoot(), rel)
+	root := uploadDir()
+	if abs != root && !strings.HasPrefix(abs, root+string(filepath.Separator)) {
+		return "", fmt.Errorf("非法路径")
+	}
+	return abs, nil
 }
 
 func handleUpload(c *gin.Context) {
@@ -46,20 +62,22 @@ func handleUpload(c *gin.Context) {
 		response.Error(c, "", "非法文件名")
 		return
 	}
-	destPath := destFolder + "/" + name
-	absDest := filepath.Join(uploadDir(), name)
-	// 防止路径穿越：落盘路径必须仍在 upload 目录内
-	if !strings.HasPrefix(absDest, uploadDir()+string(filepath.Separator)) && absDest != uploadDir() {
-		response.Error(c, "", "非法文件路径")
+
+	userDirRel := filepath.Join(destFolder, strconv.FormatInt(user.UID, 10))
+	userDirAbs := filepath.Join(uploadDir(), strconv.FormatInt(user.UID, 10))
+	if err := os.MkdirAll(userDirAbs, 0o755); err != nil {
+		response.Error(c, err.Error(), "上传失败")
 		return
 	}
 
-	if _, statErr := os.Stat(absDest); statErr == nil {
-		response.Error(c, "", "文件已存在")
+	destPath := filepath.ToSlash(filepath.Join(userDirRel, name))
+	absDest := filepath.Join(userDirAbs, name)
+	if _, err := absUnderUpload(destPath); err != nil {
+		response.Error(c, "", "非法文件路径")
 		return
 	}
-	if err := os.MkdirAll(uploadDir(), 0o755); err != nil {
-		response.Error(c, err.Error(), "上传失败")
+	if _, statErr := os.Stat(absDest); statErr == nil {
+		response.Error(c, "", "文件已存在")
 		return
 	}
 
@@ -72,7 +90,7 @@ func handleUpload(c *gin.Context) {
 	mimeType := fileHeader.Header.Get("Content-Type")
 	now := util.NowString()
 	note := c.PostForm("note")
-	_, err = tx.Exec(`insert into `+currentTable+`(path, name_original, description, date_create, type, size, uid) values (?,?,?,?,?,?,?)`,
+	res, err := tx.Exec(`insert into `+currentTable+`(path, name_original, description, date_create, type, size, uid) values (?,?,?,?,?,?,?)`,
 		destPath, name, note, now, mimeType, fileHeader.Size, user.UID)
 	if err != nil {
 		_ = tx.Rollback()
@@ -90,7 +108,12 @@ func handleUpload(c *gin.Context) {
 		response.Error(c, err.Error(), "transaction.commit: 事务执行失败，已回滚")
 		return
 	}
-	response.Success(c, "", "上传成功")
+	id, _ := res.LastInsertId()
+	response.Success(c, gin.H{
+		"id":           id,
+		"path":         destPath,
+		"download_url": fmt.Sprintf("/portal/file-manager/download?fileId=%d", id),
+	}, "上传成功")
 }
 
 func handleModify(c *gin.Context) {
@@ -125,7 +148,7 @@ func handleDelete(c *gin.Context) {
 	}
 	_ = c.ShouldBindJSON(&body)
 	diary, _ := db.Open(dbName)
-	fileInfo, err := db.QueryMap(diary, `select * from `+currentTable+` where id=?`, body.FileID)
+	fileInfo, err := db.QueryMap(diary, `select * from `+currentTable+` where id=? and uid=?`, body.FileID, user.UID)
 	if err != nil {
 		response.Error(c, "", err.Error())
 		return
@@ -141,7 +164,9 @@ func handleDelete(c *gin.Context) {
 		if fileInfo != nil {
 			p := asString(fileInfo["path"])
 			if p != "" {
-				_ = os.Remove(filepath.Join(setup.ProjectRoot(), p))
+				if abs, err := absUnderUpload(p); err == nil {
+					_ = os.Remove(abs)
+				}
 			}
 		}
 		response.Success(c, "", "删除成功")
@@ -181,8 +206,47 @@ func handleList(c *gin.Context) {
 		response.Error(c, err.Error(), err.Error())
 		return
 	}
+	for _, row := range rows {
+		id := asInt64(row["id"])
+		row["download_url"] = fmt.Sprintf("/portal/file-manager/download?fileId=%d", id)
+	}
 	util.UpdateUserLastLoginTime(user.UID)
 	response.Success(c, rows, "请求成功")
+}
+
+func handleDownload(c *gin.Context) {
+	user, msg := middleware.VerifyAuthorization(c)
+	if msg != "" {
+		response.Error(c, "", msg)
+		return
+	}
+	fileID, err := strconv.ParseInt(c.Query("fileId"), 10, 64)
+	if err != nil || fileID <= 0 {
+		response.Error(c, "", "参数错误")
+		return
+	}
+	diary, _ := db.Open(dbName)
+	row, err := db.QueryMap(diary, `select * from `+currentTable+` where id=? and uid=?`, fileID, user.UID)
+	if err != nil || row == nil {
+		response.Error(c, "", "文件不存在或无权访问")
+		return
+	}
+	rel := asString(row["path"])
+	abs, err := absUnderUpload(rel)
+	if err != nil {
+		response.Error(c, "", "非法文件路径")
+		return
+	}
+	if _, err := os.Stat(abs); err != nil {
+		response.Error(c, "", "磁盘文件不存在")
+		return
+	}
+	name := asString(row["name_original"])
+	if name == "" {
+		name = filepath.Base(abs)
+	}
+	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, strings.ReplaceAll(name, `"`, ``)))
+	http.ServeFile(c.Writer, c.Request, abs)
 }
 
 func parseJSONStringArray(s string) []string {
@@ -208,4 +272,22 @@ func asString(v interface{}) string {
 	default:
 		return fmt.Sprintf("%v", s)
 	}
+}
+
+func asInt64(v interface{}) int64 {
+	switch n := v.(type) {
+	case int64:
+		return n
+	case int:
+		return int64(n)
+	case float64:
+		return int64(n)
+	case []byte:
+		x, _ := strconv.ParseInt(string(n), 10, 64)
+		return x
+	case string:
+		x, _ := strconv.ParseInt(n, 10, 64)
+		return x
+	}
+	return 0
 }

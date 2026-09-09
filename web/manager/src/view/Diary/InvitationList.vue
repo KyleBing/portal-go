@@ -2,24 +2,27 @@
     <Container>
         <Toolbar :is-show-search-bar="false">
             <template #left>
-                <ElRadioGroup v-model="status" size="small" @change="load">
+                <ElRadioGroup v-model="status" size="small" @change="onStatusChange">
                     <ElRadioButton value="all">全部 {{ summary.total }}</ElRadioButton>
                     <ElRadioButton value="unused">未使用 {{ summary.unused }}</ElRadioButton>
                     <ElRadioButton value="used">已使用 {{ summary.used }}</ElRadioButton>
                 </ElRadioGroup>
+                <span class="shared-hint">已分享未用 {{ summary.shared_unused }}</span>
             </template>
             <template #right>
                 <ElButton type="success" icon="Plus" :loading="generating" @click="generate">生成邀请码</ElButton>
             </template>
         </Toolbar>
         <Content padding="0">
-            <div class="summary-bar">
-                <span>共 <b>{{ summary.total }}</b> 个</span>
-                <span>未使用 <b class="ok">{{ summary.unused }}</b></span>
-                <span>已绑定用户 <b>{{ summary.used }}</b></span>
-                <span>已分享未用 <b>{{ summary.shared_unused }}</b></span>
-            </div>
-            <ElTable size="small" stripe border :data="list" v-loading="loading" empty-text="暂无邀请码">
+            <ElTable
+                class="table-narrow"
+                size="small"
+                stripe
+                :height="projectStore.contentInsets.heightContent - 130"
+                :data="list"
+                v-loading="loading"
+                empty-text="暂无邀请码"
+            >
                 <ElTableColumn type="index" width="50" label="#"/>
                 <ElTableColumn prop="id" label="邀请码" min-width="180">
                     <template #default="{ row }">
@@ -72,6 +75,11 @@
                 </ElTableColumn>
             </ElTable>
         </Content>
+        <FooterPagination
+            :pager-option="pager"
+            @size-change="pageSizeChange"
+            @pager-change="pageNoChange"
+        />
     </Container>
 </template>
 
@@ -82,6 +90,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import Container from '@/layout/Container.vue'
 import Toolbar from '@/layout/Toolbar.vue'
 import Content from '@/layout/Content.vue'
+import FooterPagination from '@/layout/FooterPagination.vue'
+import { useProjectStore } from '@/pinia'
 import invitationApi, { type InvitationStatus } from '@/api/invitationApi'
 
 interface InvitationRow {
@@ -95,10 +105,18 @@ interface InvitationRow {
     binding_username?: string
 }
 
+interface Pager {
+    total: number
+    pageNo: number
+    pageSize: number
+}
+
+const projectStore = useProjectStore()
 const status = ref<InvitationStatus>('all')
 const loading = ref(false)
 const generating = ref(false)
 const list = ref<InvitationRow[]>([])
+const pager = ref<Pager>({ total: 0, pageNo: 1, pageSize: 20 })
 const summary = reactive({
     total: 0,
     unused: 0,
@@ -113,10 +131,15 @@ function formatTime(v: string | null | undefined) {
 
 function load() {
     loading.value = true
-    invitationApi.manage({ status: status.value })
+    invitationApi.manage({
+        status: status.value,
+        pageNo: pager.value.pageNo,
+        pageSize: pager.value.pageSize,
+    })
         .then((res: any) => {
             const data = res?.data || {}
             list.value = data.list || []
+            pager.value.total = Number(data.pager?.total) || 0
             Object.assign(summary, {
                 total: Number(data.summary?.total) || 0,
                 unused: Number(data.summary?.unused) || 0,
@@ -126,10 +149,27 @@ function load() {
         })
         .catch(() => {
             list.value = []
+            pager.value.total = 0
         })
         .finally(() => {
             loading.value = false
         })
+}
+
+function onStatusChange() {
+    pager.value.pageNo = 1
+    load()
+}
+
+function pageSizeChange(pageSize: number) {
+    pager.value.pageSize = pageSize
+    pager.value.pageNo = 1
+    load()
+}
+
+function pageNoChange(pageNo: number) {
+    pager.value.pageNo = pageNo
+    load()
 }
 
 function generate() {
@@ -138,6 +178,7 @@ function generate() {
         .then((res: any) => {
             ElMessage.success(res?.message || '已生成')
             status.value = 'unused'
+            pager.value.pageNo = 1
             load()
         })
         .finally(() => {
@@ -176,17 +217,10 @@ onMounted(load)
 </script>
 
 <style scoped lang="scss">
-.summary-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    padding: 12px 16px;
-    font-size: 13px;
-    color: #4e5969;
-    background: #fff;
-    border-bottom: 1px solid #f0f2f5;
-    b { color: #1f2329; }
-    .ok { color: #389e0d; }
+.shared-hint {
+    margin-left: 12px;
+    font-size: 12px;
+    color: #86909c;
 }
 
 .code {
