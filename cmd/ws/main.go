@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"math/big"
 	"net/http"
@@ -266,9 +267,9 @@ func handleRTC(h *hub, cl *client, typ string, raw json.RawMessage) {
 		}})
 
 	case msgRTCJoin:
-		code := strings.ToUpper(strings.TrimSpace(asString(content["room"])))
+		code := normalizeRoomCode(asString(content["room"]))
 		if code == "" {
-			cl.send(wsMessage{Type: msgRTCError, Content: map[string]string{"message": "缺少房间码"}})
+			cl.send(wsMessage{Type: msgRTCError, Content: map[string]string{"message": "请输入 6 位数字房间码"}})
 			return
 		}
 		if cl.room != "" && cl.room != code {
@@ -407,13 +408,22 @@ func peerIDs(rm *room, except string) []string {
 }
 
 func randomRoomCode() string {
-	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-	b := make([]byte, 6)
-	for i := range b {
-		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(alphabet))))
-		b[i] = alphabet[n.Int64()]
+	// 6-digit code, easier to share/remember than alphanumeric
+	n, err := rand.Int(rand.Reader, big.NewInt(1_000_000))
+	if err != nil {
+		return "000000"
 	}
-	return string(b)
+	return fmt.Sprintf("%06d", n.Int64())
+}
+
+func normalizeRoomCode(raw string) string {
+	var b strings.Builder
+	for _, r := range strings.TrimSpace(raw) {
+		if r >= '0' && r <= '9' {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 func randomPeerID() string {

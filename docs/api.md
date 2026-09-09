@@ -333,7 +333,7 @@
 
 文件落盘在服务端 `upload/{uid}/`，文件名经 `filepath.Base` 消毒；下载须带 `Diary-Token` / `Diary-Uid`。
 
-**端对端互传（WebRTC）**：文件字节只走浏览器 DataChannel，**不经本站带宽**。`portal-ws`（`/ws`）仅转发房间信令：`rtc-create|join|leave|peers|offer|answer|ice`（需登录 query `token`+`uid`）。仅 STUN，无 TURN/文件中继；跨公网 NAT 可能失败。
+**端对端互传（WebRTC）**：文件字节只走浏览器 DataChannel，**不经本站带宽**。日记与 Manager 共用 `portal-ws`（`/ws`）房间信令，同房间码即可互通。信令：`rtc-create|join|leave|peers|offer|answer|ice`（需登录 query `token`+`uid`）。仅 STUN，无 TURN/文件中继；跨公网 NAT 可能失败。
 
 ---
 

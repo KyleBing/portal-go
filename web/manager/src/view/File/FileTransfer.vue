@@ -6,8 +6,8 @@
                 <ElAlert
                     type="info"
                     :closable="false"
-                    title="端对端直连传文件"
-                    description="文件只经 WebRTC 点对点传输，不经过本站服务器流量。跨公网可能因 NAT 无法直连，请尽量同一 Wi‑Fi。"
+                    title="端对端直连传文件（日记 ↔ Manager 互通）"
+                    description="双方登录后用同一房间码即可，日记端与 Manager 走同一信令服务。文件只经 WebRTC 点对点传输，不经过本站服务器流量。跨公网可能因 NAT 无法直连，请尽量同一 Wi‑Fi。"
                     class="mb"
                 />
 
@@ -20,7 +20,14 @@
                     </template>
                     <div class="row">
                         <ElButton type="primary" @click="createRoom" :disabled="!authed">创建房间</ElButton>
-                        <ElInput v-model="joinCode" placeholder="输入对方房间码" style="max-width:180px" maxlength="8"/>
+                        <ElInput
+                            v-model="joinCode"
+                            placeholder="6 位数字"
+                            style="max-width:140px"
+                            maxlength="6"
+                            inputmode="numeric"
+                            @input="joinCode = String(joinCode || '').replace(/\D/g, '').slice(0, 6)"
+                        />
                         <ElButton @click="joinRoom" :disabled="!authed || !joinCode">加入</ElButton>
                         <ElButton text type="danger" @click="reset">断开</ElButton>
                     </div>
@@ -110,13 +117,13 @@ function wire() {
 function createRoom() {
     if (!authed.value) return
     transfer.connect(auth!.token, auth!.uid)
-    setTimeout(() => transfer.createRoom(), 200)
+    transfer.createRoom()
 }
 
 function joinRoom() {
     if (!authed.value) return
     transfer.connect(auth!.token, auth!.uid)
-    setTimeout(() => transfer.joinRoom(joinCode.value), 200)
+    transfer.joinRoom(joinCode.value)
 }
 
 function onPick(e: Event) {

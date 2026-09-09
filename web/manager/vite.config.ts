@@ -56,6 +56,11 @@ export default defineConfig({
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/portal/, ""),
             },
+            "/ws": {
+                target: "http://localhost:9999",
+                changeOrigin: true,
+                ws: true,
+            },
         },
     },
 });
