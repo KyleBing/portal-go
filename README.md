@@ -5,6 +5,7 @@ Go 重写的 Portal API，并统一托管原 `manager-src` 管理后台。
 ## 功能
 
 - 与原 Node Portal **API 兼容**（路径、`Diary-Token` / `Diary-Uid`、`{success,message,data}`）
+- 接口说明：[docs/api.md](docs/api.md)
 - 模块：用户/用户配置/邀请码、日记/账单/银行卡、地图、二维码、五笔、文件、七牛、点赞、统计、饥荒 API、安装引导/系统配置
 - 管理后台：`/manager/`（Vue3 + Vite + Element Plus）
 - WebSocket 点赞：`cmd/ws` 端口 `9999`
@@ -74,9 +75,14 @@ location /ws {
 }
 ```
 
-## 初始化
+## 初始化 / 防重装
 
-删除 `DATABASE_LOCK` 后访问 `GET /init` 或 `POST /setup/init`。
+是否已初始化以 **`diary.users` 表是否存在** 为准（`DATABASE_LOCK` 仅作兼容标记）。
+
+- `GET /setup/status`：返回 `isInitialized` / `initializedByTables` / `allowSetup` 等
+- `POST /setup/config`、`POST /setup/init`、`GET /init`：未初始化且允许安装时才可执行
+- 生产环境请设置 **`ALLOW_SETUP=0`**（systemd `Environment=`），即使误删锁文件也无法走安装引导
+- 确需重装：清空/重建库表，临时设 `ALLOW_SETUP=1`，完成后再改回 `0`
 
 ## Cron
 

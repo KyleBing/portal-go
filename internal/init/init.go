@@ -14,6 +14,7 @@ import (
 
 func Register(r *gin.RouterGroup) {
 	r.GET("/", handleInitHTML)
+	r.GET("", handleInitHTML)
 }
 
 func handleInitHTML(c *gin.Context) {
@@ -24,7 +25,7 @@ func handleInitHTML(c *gin.Context) {
 	}
 	c.Header("Content-Type", "text/html; charset=utf-8")
 	if result.AlreadyInitialized {
-		c.String(200, "该数据库已被初始化过，如果想重新初始化，请先删除项目中 <b>%s</b> 文件", result.LockFileName)
+		c.String(200, "%s", result.Message)
 		return
 	}
 	c.String(200, "数据库初始化成功：<br>数据库名： %s<br>创建 6 张表：%s <br>已创建数据库锁定文件： %s",
@@ -38,12 +39,18 @@ func HandleInitJSON(c *gin.Context) {
 		return
 	}
 	if result.AlreadyInitialized {
-		response.Error(c, gin.H{"dbName": result.DBName, "lockFileName": result.LockFileName}, result.Message)
+		response.Error(c, gin.H{
+			"dbName":              result.DBName,
+			"lockFileName":        result.LockFileName,
+			"initializedByTables": setup.CoreTablesExist(),
+			"initializedByLock":   setup.LockFileExists(),
+			"allowSetupEnv":       setup.AllowSetupEnv(),
+		}, result.Message)
 		return
 	}
 	response.Success(c, gin.H{
-		"dbName":      result.DBName,
-		"tableNames":  []string{"users", "user_group", "diaries", "diary_category", "qrs", "invitations"},
+		"dbName":       result.DBName,
+		"tableNames":   []string{"users", "user_group", "diaries", "diary_category", "qrs", "invitations"},
 		"lockFileName": result.LockFileName,
 	}, result.Message)
 }
@@ -75,10 +82,10 @@ func (e *InitError) Error() string {
 }
 
 func InitializeDatabase() (*InitResult, error) {
-	if setup.IsInitialized() {
+	if reason := setup.SetupBlockedReason(); reason != "" {
 		return &InitResult{
 			AlreadyInitialized: true,
-			Message:            fmt.Sprintf("该数据库已被初始化过，如果想重新初始化，请先删除项目中 %s 文件", setup.LockFileName),
+			Message:            reason,
 			DBName:             db.Diary,
 			LockFileName:       setup.LockFileName,
 		}, nil

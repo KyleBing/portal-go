@@ -18,21 +18,71 @@ import (
 const LockFileName = "DATABASE_LOCK"
 const dbName = "diary"
 
-// LockFilePath returns the path of the initialization lock file.
+// LockFilePath returns the path of the initialization lock file (relative to cwd /
+// systemd WorkingDirectory). Kept for compatibility; initialization is primarily
+// gated by whether core tables already exist.
 func LockFilePath() string {
 	return LockFileName
 }
 
-// IsDatabaseInitialized reports whether the lock file exists.
-func IsDatabaseInitialized() bool {
-	if _, err := os.Stat(LockFilePath()); err == nil {
-		return true
+// LockFileExists reports whether DATABASE_LOCK is present.
+func LockFileExists() bool {
+	_, err := os.Stat(LockFilePath())
+	return err == nil
+}
+
+// CoreTablesExist reports whether diary.users exists (source of truth for init).
+func CoreTablesExist() bool {
+	diary, err := db.Open(db.Diary)
+	if err != nil {
+		return false
 	}
-	return false
+	var n int
+	err = diary.QueryRow(`
+		SELECT COUNT(*) FROM information_schema.tables
+		WHERE table_schema = ? AND table_name = 'users'`, db.Diary).Scan(&n)
+	return err == nil && n > 0
+}
+
+// IsDatabaseInitialized is true when core tables exist or the legacy lock file is present.
+func IsDatabaseInitialized() bool {
+	return CoreTablesExist() || LockFileExists()
 }
 
 // IsInitialized is an alias for IsDatabaseInitialized.
 func IsInitialized() bool { return IsDatabaseInitialized() }
+
+// AllowSetupEnv reports whether ALLOW_SETUP permits the setup wizard.
+// Explicit 0/false/no/off disables it (recommended in production).
+// Unset or any other value leaves setup available until the DB is initialized.
+func AllowSetupEnv() bool {
+	v := strings.TrimSpace(strings.ToLower(os.Getenv("ALLOW_SETUP")))
+	switch v {
+	case "0", "false", "no", "off":
+		return false
+	default:
+		return true
+	}
+}
+
+// CanMutateSetup is true only when env allows setup and the system is not initialized.
+func CanMutateSetup() bool {
+	return AllowSetupEnv() && !IsDatabaseInitialized()
+}
+
+// SetupBlockedReason explains why config/init mutations are refused (empty if allowed).
+func SetupBlockedReason() string {
+	if !AllowSetupEnv() {
+		return "安装引导已禁用（ALLOW_SETUP=0）。如需重新安装，请由运维临时开启后再操作。"
+	}
+	if CoreTablesExist() {
+		return "系统已初始化（检测到 diary.users 表），禁止重复执行初始化。"
+	}
+	if LockFileExists() {
+		return fmt.Sprintf("系统已初始化（存在 %s）。如确认库表已清空，删除该文件后重试。", LockFileName)
+	}
+	return ""
+}
 
 // InitFn is the JSON database-initialization handler, wired by the server so
 // the /setup/init route can share the /init implementation.
@@ -65,7 +115,7 @@ func GetDatabaseConfig() config.DatabaseConfig {
 }
 
 func hasRegisteredUsers() bool {
-	if !IsDatabaseInitialized() {
+	if !CoreTablesExist() {
 		return false
 	}
 	diary, err := db.Open(db.Diary)
@@ -83,13 +133,17 @@ func hasRegisteredUsers() bool {
 func GetSetupStatus() gin.H {
 	initialized := IsDatabaseInitialized()
 	var cfg interface{}
-	if !initialized {
+	if !initialized && AllowSetupEnv() {
 		cfg = gin.H{"databaseConfig": GetDatabaseConfig()}
 	}
 	return gin.H{
-		"isInitialized":      initialized,
-		"hasRegisteredUsers": hasRegisteredUsers(),
-		"lockFileName":       LockFileName,
+		"isInitialized":       initialized,
+		"initializedByTables": CoreTablesExist(),
+		"initializedByLock":   LockFileExists(),
+		"allowSetup":          CanMutateSetup(),
+		"allowSetupEnv":       AllowSetupEnv(),
+		"hasRegisteredUsers":  hasRegisteredUsers(),
+		"lockFileName":        LockFileName,
 		"configFiles": []string{
 			"config/configDatabase.json",
 			"dist/config/configDatabase.json",
@@ -99,15 +153,15 @@ func GetSetupStatus() gin.H {
 			"保存后会同步写入配置文件，并立即更新当前服务进程内存中的配置。",
 			"项目配置、通用邀请码和七牛后台密钥请在初始化完成后，到系统配置页中维护。",
 			"为了确保后续重启后的运行结果与当前一致，建议完成向导后重启 portal 服务。",
-			"如果你使用 pm2，可以执行 pm2 restart portal。",
+			"生产环境请设置 ALLOW_SETUP=0，初始化判定以 diary.users 表为准。",
 		},
 	}
 }
 
 // SaveSetupConfig persists the database config; only allowed before init.
 func SaveSetupConfig(body map[string]interface{}) (gin.H, error) {
-	if IsDatabaseInitialized() {
-		return nil, fmt.Errorf("系统已初始化，如需重新引导，请先删除 %s 文件", LockFileName)
+	if reason := SetupBlockedReason(); reason != "" {
+		return nil, errors.New(reason)
 	}
 	raw, _ := body["databaseConfig"].(map[string]interface{})
 	if raw == nil {
@@ -164,15 +218,20 @@ func readInitSQL() (string, error) {
 
 // InitializeDatabase mirrors initService.initializeDatabase.
 func InitializeDatabase() (InitResult, error) {
-	if IsDatabaseInitialized() {
+	if reason := SetupBlockedReason(); reason != "" {
 		return InitResult{
 			AlreadyInitialized: true,
-			Message:            fmt.Sprintf("该数据库已被初始化过，如果想重新初始化，请先删除项目中 %s 文件", LockFileName),
-			Data:               gin.H{"dbName": dbName, "lockFileName": LockFileName},
+			Message:            reason,
+			Data: gin.H{
+				"dbName":              dbName,
+				"lockFileName":        LockFileName,
+				"initializedByTables": CoreTablesExist(),
+				"initializedByLock":   LockFileExists(),
+				"allowSetupEnv":       AllowSetupEnv(),
+			},
 		}, nil
 	}
 
-	// 1. create database
 	rootDB, err := db.OpenWithoutDB()
 	if err != nil {
 		return InitResult{}, fmt.Errorf("连接数据库失败：%v", err)
@@ -182,7 +241,6 @@ func InitializeDatabase() (InitResult, error) {
 		return InitResult{}, fmt.Errorf("创建数据库失败：%v", err)
 	}
 
-	// 2. create tables
 	sqlText, err := readInitSQL()
 	if err != nil {
 		return InitResult{}, fmt.Errorf("创建数据表失败：%v", err)
@@ -195,7 +253,6 @@ func InitializeDatabase() (InitResult, error) {
 		return InitResult{}, fmt.Errorf("创建数据表失败：%v", err)
 	}
 
-	// 3. create lock file
 	if err := os.WriteFile(LockFilePath(), []byte("Database has been locked, file add in "+util.NowString()), 0o644); err != nil {
 		return InitResult{}, fmt.Errorf("创建锁文件失败：%v", err)
 	}
@@ -204,8 +261,8 @@ func InitializeDatabase() (InitResult, error) {
 		AlreadyInitialized: false,
 		Message:            "数据库初始化成功",
 		Data: gin.H{
-			"dbName":     dbName,
-			"tableNames": []string{"users", "user_group", "diaries", "diary_category", "qrs", "invitations"},
+			"dbName":       dbName,
+			"tableNames":   []string{"users", "user_group", "diaries", "diary_category", "qrs", "invitations"},
 			"lockFileName": LockFileName,
 		},
 	}, nil
@@ -214,7 +271,7 @@ func InitializeDatabase() (InitResult, error) {
 // FormatInitResultHtml mirrors initService.formatInitResultHtml.
 func FormatInitResultHtml(r InitResult) string {
 	if r.AlreadyInitialized {
-		return fmt.Sprintf("该数据库已被初始化过，如果想重新初始化，请先删除项目中 <b>%v</b> 文件", r.Data["lockFileName"])
+		return r.Message
 	}
 	names, _ := r.Data["tableNames"].([]string)
 	return "数据库初始化成功：<br>" +
@@ -246,6 +303,16 @@ func Register(r *gin.RouterGroup) {
 	})
 
 	g.POST("/init", func(c *gin.Context) {
+		if reason := SetupBlockedReason(); reason != "" {
+			response.Error(c, gin.H{
+				"dbName":              dbName,
+				"lockFileName":        LockFileName,
+				"initializedByTables": CoreTablesExist(),
+				"initializedByLock":   LockFileExists(),
+				"allowSetupEnv":       AllowSetupEnv(),
+			}, reason)
+			return
+		}
 		if InitFn != nil {
 			InitFn(c)
 			return
@@ -263,7 +330,6 @@ func Register(r *gin.RouterGroup) {
 	})
 }
 
-// helpers
 func toStr(v interface{}) string {
 	if v == nil {
 		return ""
