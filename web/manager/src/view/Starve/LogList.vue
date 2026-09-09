@@ -37,7 +37,7 @@
                         <ElTableColumn width="60" prop="id" label="ID"/>
                         <ElTableColumn width="180" prop="date" label="日期">
                             <template #default="{row}">
-                                <span v-if="row.date">{{Moment(row.date).format('YYYY-MM-DD HH:mm:ss')}}</span>
+                                <span v-if="row.date">{{dayjs(row.date).format('YYYY-MM-DD HH:mm:ss')}}</span>
                             </template>
                         </ElTableColumn>
                         <ElTableColumn prop="detail" label="详情" show-overflow-tooltip/>
@@ -102,7 +102,7 @@ import Toolbar from "@/layout/Toolbar.vue";
 import Content from "@/layout/Content.vue";
 import FooterPagination from "@/layout/FooterPagination.vue";
 import { Log } from "@/model/starve";
-import Moment from "moment";
+import dayjs from 'dayjs';
 
 const projectStore = useProjectStore()
 const isLoading = ref(false)

@@ -8,22 +8,29 @@ import {
     Cherry,
     Close,
     Collection,
+    CopyDocument,
     Cpu,
     CreditCard,
     Delete,
     Document,
+    Edit,
     Finished,
     Folder,
     Food,
     FullScreen,
     InfoFilled,
     Key,
+    MagicStick,
     Minus,
     Monitor,
     Notebook,
     Picture,
     PieChart,
+    Plus,
     PriceTag,
+    Refresh,
+    RefreshLeft,
+    Search,
     Setting,
     Star,
     SuccessFilled,
@@ -36,8 +43,11 @@ import {
     Watch,
 } from '@element-plus/icons-vue'
 
-/** 只注册实际用到的图标，避免打包全部 @element-plus/icons-vue */
-const icons = {
+/**
+ * 注册 ElButton icon="Xxx" / <component :is="icon"/> 会用到的图标。
+ * 同时注册小写别名，兼容历史写法 icon="edit"。
+ */
+const icons: Record<string, object> = {
     Apple,
     ArrowDown,
     Avatar,
@@ -46,22 +56,29 @@ const icons = {
     Cherry,
     Close,
     Collection,
+    CopyDocument,
     Cpu,
     CreditCard,
     Delete,
     Document,
+    Edit,
     Finished,
     Folder,
     Food,
     FullScreen,
     InfoFilled,
     Key,
+    MagicStick,
     Minus,
     Monitor,
     Notebook,
     Picture,
     PieChart,
+    Plus,
     PriceTag,
+    Refresh,
+    RefreshLeft,
+    Search,
     Setting,
     Star,
     SuccessFilled,
@@ -72,15 +89,29 @@ const icons = {
     User,
     UserFilled,
     Watch,
-    // StatisticMain 里有小写 / kebab 别名
-    user: User,
-    tickets: Tickets,
+}
+
+// 小写 / kebab 别名（模板里混用了 edit、delete、check、close、price-tag 等）
+const aliases: Record<string, object> = {
+    check: Check,
+    close: Close,
+    delete: Delete,
+    edit: Edit,
     finished: Finished,
+    plus: Plus,
+    refresh: Refresh,
+    search: Search,
+    tickets: Tickets,
+    upload: Upload,
+    user: User,
     'price-tag': PriceTag,
+    'copy-document': CopyDocument,
+    'magic-stick': MagicStick,
+    'refresh-left': RefreshLeft,
 }
 
 export function registerIcons(app: App) {
-    for (const [name, component] of Object.entries(icons)) {
+    for (const [name, component] of Object.entries({...icons, ...aliases})) {
         app.component(name, component)
     }
 }

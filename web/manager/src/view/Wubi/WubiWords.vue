@@ -81,12 +81,12 @@
                         </ElTableColumn>
                         <ElTableColumn align="center" width="180" prop="date_create" label="创建时间">
                             <template #default="{row}">
-                                <span v-if="row.date_create">{{Moment(row.date_create).format('YYYY-MM-DD HH:mm:ss')}}</span>
+                                <span v-if="row.date_create">{{dayjs(row.date_create).format('YYYY-MM-DD HH:mm:ss')}}</span>
                             </template>
                         </ElTableColumn>
                         <ElTableColumn align="center" width="180" prop="date_modify" label="编辑时间">
                             <template #default="{row}">
-                                <span v-if="row.date_modify">{{Moment(row.date_modify).format('YYYY-MM-DD HH:mm:ss')}}</span>
+                                <span v-if="row.date_modify">{{dayjs(row.date_modify).format('YYYY-MM-DD HH:mm:ss')}}</span>
                             </template>
                         </ElTableColumn>
                         <ElTableColumn align="center" width="50" prop="uid_create" label="状态">
@@ -280,7 +280,7 @@ import Content from "@/layout/Content.vue";
 import Toolbar from "@/layout/Toolbar.vue";
 import {downloadBase64File, getAuthorization} from "@/utility";
 import FooterPagination from "@/layout/FooterPagination.vue";
-import Moment from "moment";
+import dayjs from 'dayjs';
 
 // Types
 interface WordListRequest {

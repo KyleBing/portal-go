@@ -1,5 +1,7 @@
 <template>
-    <router-view/>
+    <el-config-provider :locale="zhCn">
+        <router-view/>
+    </el-config-provider>
 </template>
 
 <script setup lang="ts">
@@ -7,6 +9,7 @@ import {useProjectStore} from "@/pinia";
 import {onMounted} from "vue";
 import { resizeHolePage} from "@/utility";
 import {useRoute} from "vue-router";
+import zhCn from "element-plus/es/locale/lang/zh-cn";
 
 const route = useRoute()
 

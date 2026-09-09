@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/KyleBing/portal-go/internal/db"
 	"github.com/KyleBing/portal-go/internal/middleware"
@@ -40,9 +41,18 @@ func handleUpload(c *gin.Context) {
 		response.Error(c, msg, "无权操作")
 		return
 	}
-	name := fileHeader.Filename
+	name := filepath.Base(fileHeader.Filename)
+	if name == "." || name == ".." || name == "" || strings.Contains(name, "\x00") {
+		response.Error(c, "", "非法文件名")
+		return
+	}
 	destPath := destFolder + "/" + name
 	absDest := filepath.Join(uploadDir(), name)
+	// 防止路径穿越：落盘路径必须仍在 upload 目录内
+	if !strings.HasPrefix(absDest, uploadDir()+string(filepath.Separator)) && absDest != uploadDir() {
+		response.Error(c, "", "非法文件路径")
+		return
+	}
 
 	if _, statErr := os.Stat(absDest); statErr == nil {
 		response.Error(c, "", "文件已存在")

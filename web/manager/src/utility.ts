@@ -1,4 +1,4 @@
-import Moment from "moment"
+import dayjs from "dayjs"
 
 interface AuthorizationData {
     nickname: string,
@@ -125,12 +125,10 @@ function resizeHolePage (routePath: string , containerDom: HTMLElement) {
 }
 
 function dateFormatter(date: Date, format: string = 'yyyy-MM-dd HH:mm:ss'): string {
-    return Moment(date).format(format.replace(/yyyy/g, 'YYYY')
-        .replace(/MM/g, 'MM')
+    const dayjsFormat = format
+        .replace(/yyyy/g, 'YYYY')
         .replace(/dd/g, 'DD')
-        .replace(/HH/g, 'HH')
-        .replace(/mm/g, 'mm')
-        .replace(/ss/g, 'ss'));
+    return dayjs(date).format(dayjsFormat)
 }
 
 export {

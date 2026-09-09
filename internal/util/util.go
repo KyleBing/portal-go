@@ -121,25 +121,35 @@ func jsUnescape(s string) string {
 var encodeSurrogateRe = regexp.MustCompile(`(?i)%u[ed][0-9a-f]{3}`)
 var decodeSurrogateRe = regexp.MustCompile(`(?i)%5cu[ed][0-9a-f]{3}`)
 
-// UnicodeEncode mirrors src/utility.ts unicodeEncode. BMP characters (e.g.
-// Chinese) pass through unchanged; astral/surrogate code units are stored as
-// escaped \\uXXXX sequences so they survive utf8mb3 columns.
+// UnicodeEncode mirrors the intended diary unicodeEncode behavior. BMP
+// characters (e.g. Chinese) pass through unchanged; astral/surrogate code
+// units are stored as \uXXXX so they survive utf8mb3 columns.
+//
+// Historical note: portal's TS used source.replace('%', '\\\\') which emits
+// two backslashes; Node then EscapeMySQLString + SQL string parsing collapsed
+// that to a single \uXXXX in the DB. portal-go uses prepared statements, so
+// the same double-backslash encode was stored literally and broke round-trips.
+// We emit a single backslash to match what is already in the database.
 func UnicodeEncode(str string) string {
 	if str == "" {
 		return ""
 	}
 	text := jsEscape(str)
 	text = encodeSurrogateRe.ReplaceAllStringFunc(text, func(m string) string {
-		return strings.Replace(m, "%", `\\`, 1)
+		return strings.Replace(m, "%", "\\", 1)
 	})
 	return jsUnescape(text)
 }
 
-// UnicodeDecode mirrors src/utility.ts unicodeDecode.
+// UnicodeDecode mirrors src/utility.ts unicodeDecode, and also accepts the
+// legacy double-backslash \\uXXXX form written by early portal-go builds.
 func UnicodeDecode(str string) string {
 	if str == "" {
 		return ""
 	}
+	// Collapse \\uXXXX → \uXXXX (portal-go prepared-statement writes).
+	// Already-single \uXXXX is unchanged because the needle is two backslashes.
+	str = strings.ReplaceAll(str, "\\\\u", "\\u")
 	text := jsEscape(str)
 	text = decodeSurrogateRe.ReplaceAllStringFunc(text, func(m string) string {
 		// replace the leading %5C (case-insensitive) with %

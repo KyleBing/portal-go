@@ -21,6 +21,8 @@ const dictTable = "wubi_dict"
 func RegisterDict(r *gin.RouterGroup) {
 	r.GET("/pull", dictPull)
 	r.PUT("/push", dictPush)
+	// 兼容部分客户端 GET + 尾斜杠重试；正式约定仍为 POST JSON
+	r.GET("/check-backup-exist", dictCheckBackupExist)
 	r.POST("/check-backup-exist", dictCheckBackupExist)
 }
 
@@ -95,12 +97,16 @@ func dictCheckBackupExist(c *gin.Context) {
 		response.Error(c, "", msg)
 		return
 	}
-	var body struct {
-		FileName string `json:"fileName"`
+	fileName := strings.TrimSpace(c.Query("fileName"))
+	if fileName == "" {
+		var body struct {
+			FileName string `json:"fileName"`
+		}
+		_ = c.ShouldBindJSON(&body)
+		fileName = strings.TrimSpace(body.FileName)
 	}
-	_ = c.ShouldBindJSON(&body)
 	wubi, _ := db.Open(dbWubi)
-	row, err := db.QueryMap(wubi, `select id, title, content_size, word_count, date_init, date_update, comment, uid, sync_count from `+dictTable+` where title = ? and uid=?`, body.FileName, user.UID)
+	row, err := db.QueryMap(wubi, `select id, title, content_size, word_count, date_init, date_update, comment, uid, sync_count from `+dictTable+` where title = ? and uid=?`, fileName, user.UID)
 	if err != nil {
 		response.Error(c, err.Error(), "")
 		return

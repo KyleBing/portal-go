@@ -19,7 +19,7 @@
                     <ElTableColumn align="left" prop="link_address" label="网址"/>
                     <ElTableColumn align="right" prop="date_init" label="添加时间">
                         <template #default="{row}">
-                            {{Moment(row.date_init).format('YYYY-MM-DD HH:mm:ss')}}
+                            {{dayjs(row.date_init).format('YYYY-MM-DD HH:mm:ss')}}
                         </template>
                     </ElTableColumn>
 
@@ -86,7 +86,7 @@ import type { FormInstance } from 'element-plus'
 import thumbsUpApi from "@/api/thumbsUpApi"
 import Container from "@/layout/Container.vue"
 import Toolbar from "@/layout/Toolbar.vue"
-import Moment from "moment/moment";
+import dayjs from 'dayjs';
 
 interface ThumbsUp {
     name: string

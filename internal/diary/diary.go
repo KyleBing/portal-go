@@ -95,21 +95,22 @@ func buildFilter(c *gin.Context) (string, []interface{}) {
 	return sqlBuf, args
 }
 
-// decodeDiaryRow 处理日记标题、内容的 unicode 解码及账单数据
+// decodeDiaryRow 处理日记标题、内容的 unicode 解码及账单数据。
+// Unescape runs before UnicodeDecode so MySQL-style \\ collapses before \uXXXX recovery.
 func decodeDiaryRow(row map[string]interface{}, unescape bool, withBill bool) {
 	if t, ok := row["title"]; ok {
-		title := util.UnicodeDecode(asString(t))
+		title := asString(t)
 		if unescape {
 			title = util.UnescapeMySQLString(title)
 		}
-		row["title"] = title
+		row["title"] = util.UnicodeDecode(title)
 	}
 	if ct, ok := row["content"]; ok {
-		content := util.UnicodeDecode(asString(ct))
+		content := asString(ct)
 		if unescape {
 			content = util.UnescapeMySQLString(content)
 		}
-		row["content"] = content
+		row["content"] = util.UnicodeDecode(content)
 	}
 	if withBill && asString(row["category"]) == "bill" {
 		row["billData"] = bill.ProcessBillOfDay(map[string]interface{}{

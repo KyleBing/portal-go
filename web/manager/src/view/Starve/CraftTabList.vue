@@ -130,7 +130,7 @@ import Toolbar from "@/layout/Toolbar.vue";
 import Content from "@/layout/Content.vue";
 import FooterPagination from "@/layout/FooterPagination.vue";
 import { CraftTab } from "@/model/starve";
-import Moment from "moment";
+import dayjs from 'dayjs';
 
 const projectStore = useProjectStore()
 const isLoading = ref(false)
@@ -323,7 +323,7 @@ onMounted(() => {
 
 function formatTime(time: string | null | undefined): string {
     if (!time) return '-'
-    return Moment(time).format('YYYY-MM-DD HH:mm:ss')
+    return dayjs(time).format('YYYY-MM-DD HH:mm:ss')
 }
 
 watch(keyword, () => {

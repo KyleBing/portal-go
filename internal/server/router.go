@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	"github.com/KyleBing/portal-go/internal/bankcard"
 	"github.com/KyleBing/portal-go/internal/bill"
@@ -16,7 +17,6 @@ import (
 	"github.com/KyleBing/portal-go/internal/mappointer"
 	"github.com/KyleBing/portal-go/internal/qr"
 	"github.com/KyleBing/portal-go/internal/setup"
-	"github.com/KyleBing/portal-go/internal/starve"
 	"github.com/KyleBing/portal-go/internal/starvenew"
 	"github.com/KyleBing/portal-go/internal/statistic"
 	"github.com/KyleBing/portal-go/internal/systemconfig"
@@ -32,13 +32,19 @@ func New() *gin.Engine {
 	// setup 的初始化回调（避免包循环）
 	setup.InitFn = initdb.HandleInitJSON
 
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Logger(), gin.Recovery())
 	r.MaxMultipartMemory = 50 << 20 // 50 MiB
+	// 避免尾斜杠 301 把 POST 变成 GET（线上 wubi check-backup 曾因此 404）
+	r.RedirectTrailingSlash = false
+	r.RedirectFixedPath = false
+	_ = r.SetTrustedProxies([]string{"127.0.0.1", "::1"})
 
 	// 健康检查 / 首页
 	r.GET("/", healthHandler)
 
-	// 静态资源：前端管理后台
+	// 静态资源：前端管理后台（hashed assets 长期缓存）
+	r.Use(managerCacheHeaders())
 	r.Static("/manager", filepath.Join(setup.ProjectRoot(), "web", "manager", "dist"))
 
 	// 在根路径与 /portal 前缀下分别注册所有模块
@@ -48,6 +54,20 @@ func New() *gin.Engine {
 	registerAll(portal)
 
 	return r
+}
+
+// managerCacheHeaders sets long-lived cache for hashed manager assets only.
+func managerCacheHeaders() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		path := c.Request.URL.Path
+		if strings.HasPrefix(path, "/manager/assets/") {
+			c.Header("Cache-Control", "public, max-age=31536000, immutable")
+		} else if path == "/manager/" || path == "/manager/index.html" || strings.HasPrefix(path, "/manager/") && !strings.Contains(path[len("/manager/"):], "/") {
+			// index.html / 入口不缓存，保证发版后立刻生效
+			c.Header("Cache-Control", "no-cache")
+		}
+		c.Next()
+	}
 }
 
 func healthHandler(c *gin.Context) {
@@ -88,6 +108,6 @@ func registerAll(rg *gin.RouterGroup) {
 	wubi.RegisterWord(rg.Group("/wubi/word"))
 	wubi.RegisterCategory(rg.Group("/wubi/category"))
 
-	starve.Register(rg.Group("/starve"))
+	// 经典 /starve 库已下线，仅保留 starve-new
 	starvenew.Register(rg.Group("/starve-new"))
 }

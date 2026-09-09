@@ -37,12 +37,12 @@
                         <ElTableColumn sortable align="right" width="100" prop="sync_count" label="同步次数"/>
                         <ElTableColumn align="center" width="160" prop="register_time" label="注册时间">
                             <template #default="{row}">
-                                {{Moment(row.register_time).format('YYYY-MM-DD HH:mm:ss')}}
+                                {{dayjs(row.register_time).format('YYYY-MM-DD HH:mm:ss')}}
                             </template>
                         </ElTableColumn>
                         <ElTableColumn align="center" width="160" prop="last_visit_time" label="最后访问时间">
                             <template #default="{row}">
-                                {{Moment(row.register_time).format('YYYY-MM-DD HH:mm:ss')}}
+                                {{dayjs(row.register_time).format('YYYY-MM-DD HH:mm:ss')}}
                             </template>
                         </ElTableColumn>
                         <ElTableColumn align="right" width="60" prop="group_id" label="组别">
@@ -131,7 +131,7 @@ import Toolbar from "@/layout/Toolbar.vue";
 import FooterPagination from "@/layout/FooterPagination.vue";
 import TableListDate from "@/components/TableListDate.vue";
 import Content from "@/layout/Content.vue";
-import Moment from "moment";
+import dayjs from 'dayjs';
 
 interface User {
     uid: string

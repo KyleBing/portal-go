@@ -4,10 +4,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/KyleBing/portal-go/internal/config"
@@ -88,14 +92,26 @@ func main() {
 	}
 
 	h := newHub()
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		serveWS(h, w, r)
 	})
 
-	log.Printf("%s websocket 服务已运行在端口 9999", now())
-	if err := http.ListenAndServe(addr, nil); err != nil {
-		log.Fatalf("websocket 服务启动失败: %v", err)
-	}
+	srv := &http.Server{Addr: addr, Handler: mux}
+	go func() {
+		log.Printf("%s websocket 服务已运行在端口 9999", now())
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("websocket 服务启动失败: %v", err)
+		}
+	}()
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	<-stop
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	log.Printf("%s 正在优雅关闭 websocket …", now())
+	_ = srv.Shutdown(ctx)
 }
 
 func serveWS(h *hub, w http.ResponseWriter, r *http.Request) {

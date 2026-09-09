@@ -2,11 +2,33 @@ package util
 
 import (
 	"database/sql"
+	"sync"
+	"time"
 
 	"github.com/KyleBing/portal-go/internal/db"
 )
 
+// lastVisitMinInterval avoids writing last_visit_time on every authenticated request.
+const lastVisitMinInterval = 5 * time.Minute
+
+var (
+	lastVisitMu   sync.Mutex
+	lastVisitSeen = map[int64]time.Time{}
+)
+
 func UpdateUserLastLoginTime(uid int64) {
+	if uid <= 0 {
+		return
+	}
+	now := time.Now()
+	lastVisitMu.Lock()
+	if t, ok := lastVisitSeen[uid]; ok && now.Sub(t) < lastVisitMinInterval {
+		lastVisitMu.Unlock()
+		return
+	}
+	lastVisitSeen[uid] = now
+	lastVisitMu.Unlock()
+
 	diary, err := db.Open(db.Diary)
 	if err != nil {
 		return

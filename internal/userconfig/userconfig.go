@@ -26,9 +26,12 @@ type UserConfig struct {
 	DateModify            *string                `json:"date_modify"`
 }
 
-// Register mounts /user-config routes.
+// Register mounts /user-config routes on both /user-config and /user-config/
+// (RedirectTrailingSlash is disabled globally).
 func Register(r *gin.RouterGroup) {
+	r.GET("", handleGet)
 	r.GET("/", handleGet)
+	r.PUT("", handleSave)
 	r.PUT("/", handleSave)
 }
 
