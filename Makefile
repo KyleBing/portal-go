@@ -1,4 +1,4 @@
-.PHONY: frontend backend build docker run tidy migrate deploy release
+.PHONY: frontend backend build docker run tidy migrate deploy
 
 frontend:
 	cd web/manager && yarn install && yarn build
@@ -14,9 +14,6 @@ migrate: backend
 build: frontend backend
 
 deploy:
-	./deploy.sh
-
-release: build
 	./deploy.sh
 
 tidy:

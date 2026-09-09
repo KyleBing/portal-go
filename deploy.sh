@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# Upload pre-built binaries + manager dist (no compile). Build first with ./build.sh
 set -euo pipefail
 
 cd "$(dirname "$0")"
+
+GOOS="${GOOS:-linux}"
+GOARCH="${GOARCH:-amd64}"
+DO_DEPLOY=1
 
 DEPLOY_ENV="${DEPLOY_ENV:-deploy.env}"
 if [[ -f "${DEPLOY_ENV}" ]]; then
@@ -23,6 +26,10 @@ OUT_DIR="bin/linux"
 PORTAL_BIN="${OUT_DIR}/portal"
 WS_BIN="${OUT_DIR}/ws"
 CRON_BIN="${OUT_DIR}/cron"
+
+file_size_human() {
+  ls -lh "$1" | awk '{print $5}'
+}
 
 section() {
   echo
@@ -59,62 +66,146 @@ run_nested() {
   return "${ec}"
 }
 
+MIN_GO_MAJOR=1
+MIN_GO_MINOR=22
+
+pick_go() {
+  local candidates=()
+  if [[ -n "${GO:-}" ]]; then
+    candidates+=("${GO}")
+  fi
+  candidates+=(
+    "$(command -v go 2>/dev/null || true)"
+    "/opt/homebrew/bin/go"
+    "/usr/local/opt/go/bin/go"
+  )
+  local candidate version major minor
+  for candidate in "${candidates[@]}"; do
+    [[ -z "${candidate}" || ! -x "${candidate}" ]] && continue
+    version="$("${candidate}" env GOVERSION 2>/dev/null || true)"
+    [[ -z "${version}" ]] && version="$("${candidate}" version 2>/dev/null | awk '{print $3}')"
+    version="${version#go}"
+    major="${version%%.*}"
+    minor="${version#*.}"
+    minor="${minor%%.*}"
+    if [[ "${major}" -gt "${MIN_GO_MAJOR}" ]] \
+      || { [[ "${major}" -eq "${MIN_GO_MAJOR}" ]] && [[ "${minor}" -ge "${MIN_GO_MINOR}" ]]; }; then
+      GO="${candidate}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    arm64|aarch64)
+      GOARCH=arm64
+      ;;
+    amd64)
+      GOARCH=amd64
+      ;;
+    --no-deploy)
+      DO_DEPLOY=0
+      ;;
+    --no-frontend)
+      DEPLOY_FRONTEND=0
+      ;;
+    *)
+      echo "❌ usage: $0 [amd64|arm64] [--no-deploy] [--no-frontend]" >&2
+      exit 1
+      ;;
+  esac
+  shift
+done
+
 VERSION_FILE="internal/version/VERSION"
-APP_VERSION="unknown"
-if [[ -f "${VERSION_FILE}" ]]; then
-  APP_VERSION="$(tr -d '[:space:]' < "${VERSION_FILE}")"
+if [[ ! -f "${VERSION_FILE}" ]]; then
+  echo "❌ missing ${VERSION_FILE}" >&2
+  exit 1
+fi
+APP_VERSION="$(tr -d '[:space:]' < "${VERSION_FILE}")"
+if [[ -z "${APP_VERSION}" ]]; then
+  echo "❌ ${VERSION_FILE} is empty" >&2
+  exit 1
 fi
 
 echo
 echo "Portal Go"
-section "Deploy"
+section "Build"
 info "Version" "${APP_VERSION}"
 
-if [[ ! -f "${DEPLOY_ENV}" ]]; then
-  status "❌" "Missing ${DEPLOY_ENV}"
-  row "Hint" "cp deploy.env.example deploy.env"
+if ! pick_go; then
+  status "❌" "Need Go ${MIN_GO_MAJOR}.${MIN_GO_MINOR}+"
+  row "Current" "$(go version 2>/dev/null || echo 'go not found')"
   echo
   exit 1
 fi
-
-for f in "${PORTAL_BIN}" "${WS_BIN}" "${CRON_BIN}"; do
-  if [[ ! -f "${f}" ]]; then
-    status "❌" "Missing ${f}"
-    row "Hint" "run ./build.sh first"
-    echo
-    exit 1
-  fi
-done
+info "Go" "$("${GO}" version)"
 
 if [[ "${DEPLOY_FRONTEND}" == "1" ]]; then
-  if [[ ! -d web/manager/dist ]] || [[ ! -f web/manager/dist/index.html ]]; then
-    status "❌" "Missing web/manager/dist"
-    row "Hint" "run ./build.sh  (or DEPLOY_FRONTEND=0)"
-    echo
-    exit 1
+  status "🎨" "Building manager frontend …"
+  if [[ ! -d web/manager/node_modules ]]; then
+    run_nested bash -lc "cd web/manager && yarn install"
   fi
+  run_nested bash -lc "cd web/manager && yarn build"
+  ok "✅" "Frontend OK"
+fi
+
+mkdir -p "${OUT_DIR}"
+status "🔨" "Compiling ${GOOS}/${GOARCH} …"
+CGO_ENABLED=0 GOOS="${GOOS}" GOARCH="${GOARCH}" "${GO}" build -o "${PORTAL_BIN}" ./cmd/portal
+CGO_ENABLED=0 GOOS="${GOOS}" GOARCH="${GOARCH}" "${GO}" build -o "${WS_BIN}" ./cmd/ws
+CGO_ENABLED=0 GOOS="${GOOS}" GOARCH="${GOARCH}" "${GO}" build -o "${CRON_BIN}" ./cmd/cron
+ok "✅" "Compile OK"
+row "portal" "$(file_size_human "${PORTAL_BIN}")"
+row "ws" "$(file_size_human "${WS_BIN}")"
+row "cron" "$(file_size_human "${CRON_BIN}")"
+
+if [[ "${DO_DEPLOY}" -eq 0 ]]; then
+  section "Deploy"
+  status "⏭️" "Skipped (--no-deploy)"
+  section "Done"
+  info "Version" "${APP_VERSION}"
+  status "🎉" "Build complete"
+  echo
+  exit 0
+fi
+
+if [[ ! -f "${DEPLOY_ENV}" ]]; then
+  section "Deploy"
+  status "⚠️" "Skipped (no deploy.env)"
+  row "Hint" "cp deploy.env.example deploy.env"
+  section "Done"
+  info "Version" "${APP_VERSION}"
+  status "🎉" "Build complete"
+  echo
+  exit 0
 fi
 
 DEST="${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
+section "Deploy"
 
 status "📤" "Uploading binaries …"
 row "Target" "${DEST}"
-run_nested ssh "${DEPLOY_USER}@${DEPLOY_HOST}" \
-  "mkdir -p ${DEPLOY_PATH}/bin ${DEPLOY_PATH}/web/manager ${DEPLOY_PATH}/config ${DEPLOY_PATH}/migrations ${DEPLOY_PATH}/upload ${DEPLOY_PATH}/temp"
+run_nested ssh "${DEPLOY_USER}@${DEPLOY_HOST}" "mkdir -p ${DEPLOY_PATH}/bin ${DEPLOY_PATH}/web/manager ${DEPLOY_PATH}/config ${DEPLOY_PATH}/migrations ${DEPLOY_PATH}/upload ${DEPLOY_PATH}/temp"
 rsync -az "${PORTAL_BIN}" "${WS_BIN}" "${CRON_BIN}" "${DEST}bin/"
 ok "✅" "Binaries OK"
 
+# init.sql still needed on disk for first-time /setup init
 status "📤" "Uploading migrations/init.sql …"
 rsync -az migrations/init.sql "${DEST}migrations/"
 ok "✅" "init.sql OK"
 
-if [[ "${DEPLOY_FRONTEND}" == "1" ]]; then
+if [[ "${DEPLOY_FRONTEND}" == "1" && -d web/manager/dist ]]; then
   status "📤" "Uploading manager frontend …"
+  # nginx /manager/ 已反代到 portal-go 内嵌静态目录
   rsync -az --delete web/manager/dist/ "${DEST}web/manager/dist/"
   ok "✅" "Frontend upload OK"
 fi
 
 status "🗄️" "Running migrations …"
+# Prefer migrate BEFORE restart so new code never hits old schema.
 run_nested ssh "${DEPLOY_USER}@${DEPLOY_HOST}" \
   "chmod +x ${DEPLOY_PATH}/bin/portal ${DEPLOY_PATH}/bin/ws ${DEPLOY_PATH}/bin/cron && cd ${DEPLOY_PATH} && ./bin/portal migrate"
 ok "✅" "Migrate OK"
@@ -130,5 +221,5 @@ fi
 
 section "Done"
 info "Version" "${APP_VERSION}"
-status "🎉" "Deploy complete"
+status "🎉" "All complete"
 echo

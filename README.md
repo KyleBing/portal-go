@@ -21,8 +21,7 @@ web/manager/          # 管理后台源码
 config/configDatabase.json
 migrations/init.sql   # 首次安装
 migrations/001_*.sql  # 增量迁移（嵌入二进制）
-build.sh              # 本地交叉编译（不含上传）
-deploy.sh             # rsync 上传 + migrate + 重启（不含编译）
+deploy.sh             # 一键构建 + 部署 + migrate
 ```
 
 ## 本地运行
@@ -44,22 +43,24 @@ cd web/manager && yarn && yarn dev   # :4000，代理 /portal -> :3000
 
 ## 生产部署
 
-先本地构建，再上传（与 diary / RideTrack 一样，`deploy.sh` 不编译）：
+本地一条命令完成交叉编译、上传、migrate、重启（原 `build.sh` 已改名为 `deploy.sh`）：
 
 ```bash
 cp deploy.env.example deploy.env   # 按需改主机/路径
-./build.sh                         # 交叉编译 + 可选 yarn build manager
-./build.sh --no-frontend           # 只编 Go，不同步前端时也可 DEPLOY_FRONTEND=0 ./deploy.sh
-./deploy.sh                        # rsync + migrate + systemctl restart
+./deploy.sh                        # linux/amd64 + 部署
+./deploy.sh --no-deploy            # 只编译
+./deploy.sh --no-frontend          # 不构建 manager
 ```
 
 `deploy.sh` 会：
 
-1. rsync `bin/linux/{portal,ws,cron}` 与可选 `web/manager/dist`
-2. 远程执行 `./bin/portal migrate`
-3. `systemctl restart portal-go portal-ws`
+1. 可选构建 `web/manager`
+2. 交叉编译 `portal` / `ws` / `cron`
+3. rsync 到 `DEPLOY_PATH`
+4. 远程执行 `./bin/portal migrate`
+5. `systemctl restart portal-go portal-ws`
 
-新增表结构时：在 `migrations/` 增加 `NNN_description.sql`（勿改已发布文件），再 `./build.sh && ./deploy.sh`。
+新增表结构时：在 `migrations/` 增加 `NNN_description.sql`（勿改已发布文件），再跑 `./deploy.sh`。
 
 ## Nginx 示例
 
