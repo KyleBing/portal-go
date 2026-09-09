@@ -14,9 +14,6 @@
                     </ElFormItem>
                 </ElForm>
             </template>
-            <template #right>
-                <ElButton type="primary" plain @click="$router.push('/file/transfer')">端对端互传</ElButton>
-            </template>
         </Toolbar>
 
         <Content padding="0">

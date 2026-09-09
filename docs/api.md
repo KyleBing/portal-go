@@ -333,7 +333,7 @@
 
 文件落盘在服务端 `upload/{uid}/`，文件名经 `filepath.Base` 消毒；下载须带 `Diary-Token` / `Diary-Uid`。
 
-**端对端互传（WebRTC）**：文件字节只走浏览器 DataChannel，**不经本站带宽**。日记与 Manager 共用 `portal-ws`（`/ws`）房间信令，同房间码即可互通。信令：`rtc-create|join|leave|peers|offer|answer|ice`（需登录 query `token`+`uid`）。仅 STUN，无 TURN/文件中继；跨公网 NAT 可能失败。
+**端对端互传（WebRTC）**：`portal-ws`（`/ws`）提供**公开**房间信令：`rtc-create|join|leave|peers|offer|answer|ice`（无需登录）。文件字节经客户端 DataChannel 直连，不经本站带宽；无 TURN/文件中继。房间无信令活动 **30 分钟**后过期。个人主页 `/#/transfer` 提供互传页。
 
 ---
 
@@ -361,7 +361,7 @@
 | PUT | `/modify` | Admin | 按 `name` 更新 |
 | DELETE | `/delete` | Admin | `name` |
 
-实时点赞还可走 WebSocket：`ws://host:9999/`（生产经 Nginx `/ws`）。同通道可做 **WebRTC 信令**（`rtc-*`，需登录），**不中继文件字节**。
+实时点赞还可走 WebSocket：`ws://host:9999/`（生产经 Nginx `/ws`）。同通道可做 **公开 WebRTC 信令**（`rtc-*`，无需登录；房间空闲 30 分钟过期），**不中继文件字节**。
 
 ---
 

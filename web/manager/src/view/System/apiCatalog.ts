@@ -246,7 +246,7 @@ export const API_MODULES: ApiModule[] = [
         id: 'file-manager',
         name: '文件',
         prefix: '/file-manager',
-        description: '本地上传 upload/{uid}/。端对端互传：WebRTC DataChannel 直连，portal-ws 仅 rtc-* 信令（无 TURN/文件中继）',
+        description: '本地上传 upload/{uid}/。WebRTC 互传信令仍由 portal-ws（rtc-*）提供，前后端均无互传页',
         endpoints: [
             { method: 'POST', path: '/file-manager/upload', auth: 'A', summary: '上传到 upload/{uid}/', body: 'multipart file + note' },
             { method: 'POST', path: '/file-manager/modify', auth: 'A', summary: '改描述', body: 'fileId, description' },

@@ -159,18 +159,6 @@ const MENUS_PRESET: Array<EntityMenu> = [
                 "icon": "Folder",
                 "isNeedAdminPermission": true,
                 "children": []
-            },
-            {
-                "name": "端对端互传",
-                "type": EnumMenuType['菜单'],
-                "path": "/file/transfer",
-                "match_path": "",
-                "component": "File/FileTransfer.vue",
-                "visible": EnumMenuVisible['可见'],
-                "redirect": "",
-                "icon": "Upload",
-                "isNeedAdminPermission": false,
-                "children": []
             }
         ]
     },

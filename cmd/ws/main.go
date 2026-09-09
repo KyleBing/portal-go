@@ -38,6 +38,10 @@ const (
 	msgRTCError  = "rtc-error"
 
 	addr = ":9999"
+
+	// Public rooms expire after this much idle signaling time (no create/join/offer/answer/ice).
+	roomIdleTTL      = 30 * time.Minute
+	roomCleanupEvery = time.Minute
 )
 
 type wsMessage struct {
@@ -56,8 +60,9 @@ type hub struct {
 }
 
 type room struct {
-	code    string
-	clients map[string]*client // peerID -> client
+	code       string
+	clients    map[string]*client // peerID -> client
+	lastActive time.Time
 }
 
 type client struct {
@@ -115,6 +120,7 @@ func main() {
 	}
 
 	h := newHub()
+	go h.cleanupExpiredRooms()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		serveWS(h, w, r)
@@ -122,7 +128,7 @@ func main() {
 
 	srv := &http.Server{Addr: addr, Handler: mux}
 	go func() {
-		log.Printf("%s websocket 服务已运行在端口 9999（thumbs-up + WebRTC 信令）", now())
+		log.Printf("%s websocket 服务已运行在端口 9999（thumbs-up + 公共 WebRTC 信令，房间空闲 %s 过期）", now(), roomIdleTTL)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("websocket 服务启动失败: %v", err)
 		}
@@ -150,7 +156,7 @@ func serveWS(h *hub, w http.ResponseWriter, r *http.Request) {
 	if ok {
 		log.Printf("%s 客户端已连接 uid=%d peer=%s", now(), uid, cl.peerID)
 	} else {
-		log.Printf("%s 匿名客户端已连接 peer=%s（仅 thumbs-up/心跳）", now(), cl.peerID)
+		log.Printf("%s 匿名客户端已连接 peer=%s", now(), cl.peerID)
 	}
 
 	defer func() {
@@ -181,10 +187,6 @@ func serveWS(h *hub, w http.ResponseWriter, r *http.Request) {
 			_ = json.Unmarshal(envelope.Content, &content)
 			handleThumbsUp(h, content.Key)
 		case msgRTCCreate, msgRTCJoin, msgRTCLeave, msgRTCOffer, msgRTCAnswer, msgRTCIce:
-			if cl.uid <= 0 {
-				cl.send(wsMessage{Type: msgRTCError, Content: map[string]string{"message": "WebRTC 信令需要登录（Diary-Token / Diary-Uid）"}})
-				continue
-			}
 			handleRTC(h, cl, envelope.Type, envelope.Content)
 		}
 	}
@@ -256,7 +258,11 @@ func handleRTC(h *hub, cl *client, typ string, raw json.RawMessage) {
 		for h.rooms[code] != nil {
 			code = randomRoomCode()
 		}
-		rm := &room{code: code, clients: map[string]*client{cl.peerID: cl}}
+		rm := &room{
+			code:       code,
+			clients:    map[string]*client{cl.peerID: cl},
+			lastActive: time.Now(),
+		}
 		h.rooms[code] = rm
 		cl.room = code
 		h.mu.Unlock()
@@ -279,7 +285,14 @@ func handleRTC(h *hub, cl *client, typ string, raw json.RawMessage) {
 		rm := h.rooms[code]
 		if rm == nil {
 			h.mu.Unlock()
-			cl.send(wsMessage{Type: msgRTCError, Content: map[string]string{"message": "房间不存在"}})
+			cl.send(wsMessage{Type: msgRTCError, Content: map[string]string{"message": "房间不存在或已过期"}})
+			return
+		}
+		if time.Since(rm.lastActive) > roomIdleTTL {
+			expired := h.takeRoomLocked(code)
+			h.mu.Unlock()
+			h.notifyRoomExpired(expired)
+			cl.send(wsMessage{Type: msgRTCError, Content: map[string]string{"message": "房间已过期"}})
 			return
 		}
 		if len(rm.clients) >= 2 && rm.clients[cl.peerID] == nil {
@@ -289,6 +302,7 @@ func handleRTC(h *hub, cl *client, typ string, raw json.RawMessage) {
 		}
 		peers := peerIDs(rm, cl.peerID)
 		rm.clients[cl.peerID] = cl
+		rm.lastActive = time.Now()
 		cl.room = code
 		h.mu.Unlock()
 
@@ -312,6 +326,7 @@ func handleRTC(h *hub, cl *client, typ string, raw json.RawMessage) {
 			cl.send(wsMessage{Type: msgRTCError, Content: map[string]string{"message": "缺少 to 或未在房间内"}})
 			return
 		}
+		h.touchRoom(cl.room)
 		payload := map[string]interface{}{
 			"from": cl.peerID,
 			"to":   to,
@@ -339,6 +354,7 @@ func (h *hub) leaveRoom(cl *client) {
 	rm := h.rooms[code]
 	if rm != nil {
 		delete(rm.clients, cl.peerID)
+		rm.lastActive = time.Now()
 		if len(rm.clients) == 0 {
 			delete(h.rooms, code)
 		}
@@ -353,10 +369,64 @@ func (h *hub) leaveRoom(cl *client) {
 	h.mu.Unlock()
 	if len(remaining) > 0 {
 		h.roomBroadcast(code, "", wsMessage{Type: msgRTCPeers, Content: map[string]interface{}{
-			"room":   code,
-			"peers":  remaining,
-			"left":   cl.peerID,
+			"room":  code,
+			"peers": remaining,
+			"left":  cl.peerID,
 		}})
+	}
+}
+
+func (h *hub) touchRoom(code string) {
+	h.mu.Lock()
+	if rm := h.rooms[code]; rm != nil {
+		rm.lastActive = time.Now()
+	}
+	h.mu.Unlock()
+}
+
+// takeRoomLocked removes a room while hub.mu is held and clears members' room field.
+func (h *hub) takeRoomLocked(code string) *room {
+	rm := h.rooms[code]
+	if rm == nil {
+		return nil
+	}
+	delete(h.rooms, code)
+	for _, c := range rm.clients {
+		c.room = ""
+	}
+	return rm
+}
+
+func (h *hub) notifyRoomExpired(rm *room) {
+	if rm == nil {
+		return
+	}
+	msg := wsMessage{Type: msgRTCError, Content: map[string]string{"message": "房间已过期"}}
+	for _, c := range rm.clients {
+		c.send(msg)
+	}
+}
+
+func (h *hub) cleanupExpiredRooms() {
+	ticker := time.NewTicker(roomCleanupEvery)
+	defer ticker.Stop()
+	for range ticker.C {
+		nowT := time.Now()
+		var expired []*room
+		h.mu.Lock()
+		for code, rm := range h.rooms {
+			if nowT.Sub(rm.lastActive) > roomIdleTTL {
+				expired = append(expired, h.takeRoomLocked(code))
+			}
+		}
+		h.mu.Unlock()
+		for _, rm := range expired {
+			if rm == nil {
+				continue
+			}
+			log.Printf("%s 房间过期已清理 room=%s peers=%d", now(), rm.code, len(rm.clients))
+			h.notifyRoomExpired(rm)
+		}
 	}
 }
 
