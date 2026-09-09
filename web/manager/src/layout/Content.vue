@@ -25,12 +25,12 @@ const props = withDefaults(defineProps<{
     heightPlus?: number   // 高度变化，改变组件的高度
     padding?: string  // 20px
     isTransparent?: boolean  // 背景是否透明
-    isShowPagination?: boolean  // 是否显示分页
+    isShowPagination?: boolean  // 是否预留底部分页高度（有 FooterPagination 时再开）
 }>(), {
     heightPlus: 0,
     padding: '20px 30px',
     isTransparent: false,
-    isShowPagination: true
+    isShowPagination: false
 })
 </script>
 

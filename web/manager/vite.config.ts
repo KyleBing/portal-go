@@ -13,7 +13,7 @@ export default defineConfig({
     plugins: [
         vue(),
         AutoImport({
-            resolvers: [ElementPlusResolver()],
+            resolvers: [ElementPlusResolver({importStyle: "css"})],
         }),
         Components({
             resolvers: [ElementPlusResolver({importStyle: "css"})],
@@ -50,9 +50,10 @@ export default defineConfig({
     },
     server: {
         port: 4000,
+        host: "0.0.0.0",
         proxy: {
             "/portal": {
-                target: "http://localhost:3000",
+                target: "http://kylebing.cn:3000",
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/portal/, ""),
             },

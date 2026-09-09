@@ -74,14 +74,15 @@ function topNavClicked(menuItem: RouteRecordRaw){
 
 <style lang="scss" scoped>
 @use "sass:math";
+@use "sass:color";
 @use "../../assets/scss/variables" as *;
 @use "../../assets/scss/utility" as *;
 @use "../../assets/scss/font" as *;
 
 $height-nav: 40px;
 
-$bg-navbar-hover: transparentize(white, 0.8);
-$bg-navbar-active: transparentize(white, 0.1);
+$bg-navbar-hover: color.adjust(white, $alpha: -0.8);
+$bg-navbar-active: color.adjust(white, $alpha: -0.1);
 
 
 .nav-list {
@@ -102,12 +103,12 @@ $bg-navbar-active: transparentize(white, 0.1);
         -webkit-border-radius: 5px;
         -moz-border-radius: 5px;
         border-radius: 5px;
-        background-color: lighten($color-main, 10%);
+        background-color: color.adjust($color-main, $lightness: 10%);
         transition: all .2s;
         height: 3px; }
 
     &:hover::-webkit-scrollbar-thumb {
-        background-color: lighten($color-main, 40%);
+        background-color: color.adjust($color-main, $lightness: 40%);
         transition: all .2s; }
 
     &::-webkit-scrollbar-button {
@@ -128,10 +129,10 @@ $bg-navbar-active: transparentize(white, 0.1);
         font-size: $fz-navbar;
         line-height: 38px;
         @extend .btn-like;
-        text-shadow: 1px 1px 1px transparentize(black,0.8);
+        text-shadow: 1px 1px 1px color.adjust(black, $alpha: -0.8);
         position: relative;
         .badge-custom{
-            @include box-shadow(1px 1px 1px transparentize(black, 0.7));
+            @include box-shadow(1px 1px 1px color.adjust(black, $alpha: -0.7));
             padding: 2px 6px;
             line-height: 1;
             position: absolute;
@@ -141,7 +142,7 @@ $bg-navbar-active: transparentize(white, 0.1);
             color: white;
             background-color: $red;
             @include border-radius(20px);
-            border: 1px solid transparentize(white, 0.5);
+            border: 1px solid color.adjust(white, $alpha: -0.5);
         }
 
         &:hover {

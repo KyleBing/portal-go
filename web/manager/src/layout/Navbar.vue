@@ -117,12 +117,13 @@ function handleMenu(key: string) {
 </script>
 
 <style lang="scss">
+@use "sass:color";
 @use "@/assets/scss/variables" as *;
 @use "@/assets/scss/utility" as *;
 
-$active-submenu-title: darken($color-main, 30%);
-$active-submenu-bg: transparentize($color-main, 0.9);
-$hover-menu-bg: transparentize($color-main, 0.4);
+$active-submenu-title: color.adjust($color-main, $lightness: -30%);
+$active-submenu-bg: color.adjust($color-main, $alpha: -0.9);
+$hover-menu-bg: color.adjust($color-main, $alpha: -0.4);
 
 .el-menu {
     border: none;
@@ -155,7 +156,7 @@ $hover-menu-bg: transparentize($color-main, 0.4);
                 &.is-active{
                     color: white;
                     //background-color: $active-submenu-bg;
-                    background-color: desaturate($color-main, 20%);
+                    background-color: color.adjust($color-main, $saturation: -20%);
                 }
                 &:hover{
                     color: white;
@@ -192,9 +193,9 @@ $hover-menu-bg: transparentize($color-main, 0.4);
 
     &.is-active {
         color: white !important;
-        background-color: desaturate($color-main, 20%);
+        background-color: color.adjust($color-main, $saturation: -20%);
         &:hover{
-            background-color: desaturate($color-main, 20%) !important;
+            background-color: color.adjust($color-main, $saturation: -20%) !important;
         }
     }
     &:hover{

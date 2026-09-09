@@ -52,7 +52,7 @@
             </template>
         </Toolbar>
 
-        <Content padding="0">
+        <Content padding="0" :is-show-pagination="true">
             <div class="image-grid" v-loading="isLoading">
                 <div v-for="item in tableData" 
                      :key="item.id" 

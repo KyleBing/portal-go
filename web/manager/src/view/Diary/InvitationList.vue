@@ -13,7 +13,7 @@
                 <ElButton type="success" icon="Plus" :loading="generating" @click="generate">生成邀请码</ElButton>
             </template>
         </Toolbar>
-        <Content padding="0">
+        <Content padding="0" :is-show-pagination="true">
             <ElTable
                 class="table-narrow"
                 size="small"

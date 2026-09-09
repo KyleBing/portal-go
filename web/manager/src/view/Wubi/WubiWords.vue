@@ -36,7 +36,7 @@
         </Toolbar>
 
         <!-- Table -->
-        <Content padding="0">
+        <Content padding="0" :is-show-pagination="true">
             <ElRow :gutter="10">
                 <ElCol :span="4">
                     <side-wubi-category-list

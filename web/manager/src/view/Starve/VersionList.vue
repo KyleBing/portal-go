@@ -23,7 +23,7 @@
             </template>
         </Toolbar>
 
-        <Content padding="0">
+        <Content padding="0" :is-show-pagination="true">
             <ElRow :gutter="10">
                 <ElCol :span="24">
                     <ElTable

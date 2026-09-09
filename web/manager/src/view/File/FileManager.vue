@@ -16,7 +16,7 @@
             </template>
         </Toolbar>
 
-        <Content padding="0">
+        <Content padding="0" :is-show-pagination="true">
             <ElTable
                 class="table-narrow"
                 size="small"
