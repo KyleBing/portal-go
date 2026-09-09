@@ -17,6 +17,7 @@
                         :count="item.value"/>
                 </template>
             </div>
+            <StatisticUsers/>
         </Content>
     </Container>
 </template>
@@ -32,6 +33,7 @@ import Content from "@/layout/Content.vue";
 
 const StatisticUserWordCount = defineAsyncComponent(() => import("@/view/Statistics/StatisticUserWordCount.vue"));
 const StatisticUserDiaryCount = defineAsyncComponent(() => import("@/view/Statistics/StatisticUserDiaryCount.vue"));
+const StatisticUsers = defineAsyncComponent(() => import("@/view/Statistics/StatisticUsers.vue"));
 
 interface StatisticItem {
     name: string;

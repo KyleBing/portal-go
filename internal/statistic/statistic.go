@@ -18,7 +18,8 @@ func Register(r *gin.RouterGroup) {
 	r.GET("/user-data-words", handleUserDataWords)
 	r.GET("/category", handleCategory)
 	r.GET("/year", handleYear)
-	r.GET("/users", handleUsers)
+	// /users 已下线（原 diary 端用户统计）；改用管理员专用 /manager-users
+	r.GET("/manager-users", handleManagerUsers)
 	r.GET("/weather", handleWeather)
 }
 
@@ -63,8 +64,13 @@ func handleOverview(c *gin.Context) {
 }
 
 func handleUserDataDiary(c *gin.Context) {
-	if _, msg := middleware.VerifyAuthorization(c); msg != "" {
+	user, msg := middleware.VerifyAuthorization(c)
+	if msg != "" {
 		response.Error(c, "", msg)
+		return
+	}
+	if !user.IsAdmin() {
+		response.Error(c, "", "需要管理员权限")
 		return
 	}
 	diary, _ := db.Open(dbName)
@@ -77,8 +83,13 @@ func handleUserDataDiary(c *gin.Context) {
 }
 
 func handleUserDataWords(c *gin.Context) {
-	if _, msg := middleware.VerifyAuthorization(c); msg != "" {
+	user, msg := middleware.VerifyAuthorization(c)
+	if msg != "" {
 		response.Error(c, "", msg)
+		return
+	}
+	if !user.IsAdmin() {
+		response.Error(c, "", "需要管理员权限")
 		return
 	}
 	diary, _ := db.Open(dbName)
@@ -164,18 +175,57 @@ func handleYear(c *gin.Context) {
 	response.Success(c, result, "")
 }
 
-func handleUsers(c *gin.Context) {
-	if _, msg := middleware.VerifyAuthorization(c); msg != "" {
+// handleManagerUsers returns active-ish users for the manager statistics page.
+// Admin only. Replaces the old diary-facing GET /statistic/users.
+func handleManagerUsers(c *gin.Context) {
+	user, msg := middleware.VerifyAuthorization(c)
+	if msg != "" {
 		response.Error(c, "", msg)
 		return
 	}
+	if !user.IsAdmin() {
+		response.Error(c, "", "需要管理员权限")
+		return
+	}
 	diary, _ := db.Open(dbName)
-	rows, err := db.QueryMaps(diary, `select uid, last_visit_time, nickname, register_time, count_diary, count_dict, count_map_route, sync_count from users where count_diary >= 5 or sync_count >= 5 or count_map_route >=1`)
+	rows, err := db.QueryMaps(diary, `
+		SELECT uid, last_visit_time, nickname, register_time,
+			count_diary, count_dict, count_map_route, count_words, sync_count
+		FROM users
+		WHERE count_diary >= 1 OR count_dict >= 1 OR count_map_route >= 1 OR sync_count >= 1
+		ORDER BY count_diary DESC, sync_count DESC`)
 	if err != nil {
 		response.Error(c, err.Error(), err.Error())
 		return
 	}
-	response.Success(c, rows, "")
+
+	diaryUsers := make([]map[string]interface{}, 0)
+	dictUsers := make([]map[string]interface{}, 0)
+	mapRouteUsers := make([]map[string]interface{}, 0)
+	diaryChart := make([]gin.H, 0)
+	for _, row := range rows {
+		if asInt(row["count_diary"]) > 0 {
+			diaryUsers = append(diaryUsers, row)
+			diaryChart = append(diaryChart, gin.H{
+				"name":  asString(row["nickname"]),
+				"value": asInt(row["count_diary"]),
+			})
+		}
+		if asInt(row["count_dict"]) > 0 {
+			dictUsers = append(dictUsers, row)
+		}
+		if asInt(row["count_map_route"]) > 0 {
+			mapRouteUsers = append(mapRouteUsers, row)
+		}
+	}
+
+	response.Success(c, gin.H{
+		"users":            rows,
+		"diary_users":      diaryUsers,
+		"dict_users":       dictUsers,
+		"map_route_users":  mapRouteUsers,
+		"diary_chart":      diaryChart,
+	}, "请求成功")
 }
 
 func handleWeather(c *gin.Context) {

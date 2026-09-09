@@ -303,17 +303,19 @@
 
 ## 统计 `/statistic`
 
-全部需登录 **A**。
+除注明外需登录 **A**；标 Admin 的仅管理员。
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/statistic/` | 概览计数（管理员全局 / 用户自身） |
-| GET | `/user-data-diary` | 日记数 > 3 的用户 |
-| GET | `/user-data-words` | 有词条计数的用户 |
-| GET | `/category` | 本人分类分布 |
-| GET | `/year` | 本人年月直方图 |
-| GET | `/users` | 用户快照 |
-| GET | `/weather` | 本人 life 气温 |
+| 方法 | 路径 | 鉴权 | 说明 |
+|------|------|------|------|
+| GET | `/statistic/` | A | 概览计数（管理员全局 / 用户自身） |
+| GET | `/user-data-diary` | Admin | 各用户日记数（`count_diary > 3`） |
+| GET | `/user-data-words` | Admin | 有词条计数的用户 |
+| GET | `/category` | A | 本人分类分布 |
+| GET | `/year` | A | 本人年月直方图 |
+| GET | `/manager-users` | Admin | Manager 用户统计：日记/码表/路书分组 + `diary_chart` |
+| GET | `/weather` | A | 本人 life 气温 |
+
+> 原 `GET /statistic/users`（diary 端用户统计）已移除，请改用 `/manager-users`。
 
 ---
 
