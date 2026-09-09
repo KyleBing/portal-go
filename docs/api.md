@@ -119,6 +119,7 @@
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
 | GET | `/list` | Opt | 未绑定邀请码；非管理员仅 `is_shared=0` |
+| GET | `/manage` | Admin | Manager 全量列表（联表用户）；Query `status=all\|unused\|used`，返回 `list` + `summary` |
 | POST | `/generate` | Admin | 生成 |
 | POST | `/mark-shared` | Admin | Body `id` |
 | DELETE | `/delete` | Admin | Query `id` |

@@ -87,6 +87,7 @@ export const API_MODULES: ApiModule[] = [
         description: '注册邀请码',
         endpoints: [
             { method: 'GET', path: '/invitation/list', auth: 'Opt', summary: '未绑定邀请码；非管理员仅 is_shared=0' },
+            { method: 'GET', path: '/invitation/manage', auth: 'Admin', summary: 'Manager 管理列表（含已使用与绑定用户）', params: 'status=all|unused|used' },
             { method: 'POST', path: '/invitation/generate', auth: 'Admin', summary: '生成邀请码' },
             { method: 'POST', path: '/invitation/mark-shared', auth: 'Admin', summary: '标记已分享', body: 'id' },
             { method: 'DELETE', path: '/invitation/delete', auth: 'Admin', summary: '删除', params: 'id' },
