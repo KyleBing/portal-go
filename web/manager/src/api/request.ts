@@ -1,6 +1,6 @@
 import axios from "axios";
 import {ElLoading, ElMessage} from "element-plus";
-import {getAuthorization} from "@/utility.ts";
+import {getAuthorization, updateAuthorizationToken} from "@/utility.ts";
 
 
 const LOADING_OPTION = {
@@ -10,11 +10,24 @@ const LOADING_OPTION = {
 }
 
 const BASE_URL = '/portal' // absolute API prefix; paths already start with '/'
+const RENEWED_TOKEN_HEADER = 'x-access-token'
 
 function joinURL(base: string, path: string) {
     const b = base.replace(/\/+$/, '')
     const p = path.startsWith('/') ? path : `/${path}`
     return `${b}${p}`
+}
+
+// 读取服务端续签下发的新 JWT
+function applyRenewedToken(headers: Record<string, unknown> | undefined) {
+    if (!headers) {
+        return
+    }
+    const raw = headers[RENEWED_TOKEN_HEADER] ?? headers['X-Access-Token']
+    const token = Array.isArray(raw) ? raw[0] : raw
+    if (typeof token === 'string' && token) {
+        updateAuthorizationToken(token)
+    }
 }
 
 function request(
@@ -31,11 +44,13 @@ function request(
     * 给 requestData 添加 authorization 内部的数据： username email uid 等等
     * */
     const path = url.replace(/^\/+/, '')
-    if (path !== 'user/login' && path !== 'user/register'){ // 注册和登录时不添加 Token 数据
-        Object.assign(headers, {
-            'Diary-Token':  getAuthorization() && getAuthorization().token,
-            'Diary-Uid':  getAuthorization() && getAuthorization().uid
-        })
+    if (path !== 'user/login' && path !== 'user/register'){ // 注册和登录时不添加 Token
+        const auth = getAuthorization()
+        if (auth?.token) {
+            Object.assign(headers, {
+                'Authorization': `Bearer ${auth.token}`,
+            })
+        }
     }
 
     return new Promise((resolve, reject) => {
@@ -49,6 +64,7 @@ function request(
         })
             .then(res => {
                 if (showLoading) layerLoading.close()
+                applyRenewedToken(res.headers)
                 if (res.status === 200) {
                     if (res.data.success){
                         resolve(res.data)

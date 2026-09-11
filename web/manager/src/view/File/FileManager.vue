@@ -140,13 +140,13 @@ function getFileList() {
 
 async function download(row: FileInfo) {
     const auth = getAuthorization()
-    if (!auth?.token || !auth?.uid) {
+    if (!auth?.token) {
         ElMessage.error('未登录')
         return
     }
     const url = row.download_url || `/portal/file-manager/download?fileId=${row.id}`
     try {
-        await downloadWithAuth(url, auth.token, auth.uid, row.name_original || 'file')
+        await downloadWithAuth(url, auth.token, row.name_original || 'file')
     } catch {
         ElMessage.error('下载失败')
     }

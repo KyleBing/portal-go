@@ -96,7 +96,7 @@ function login() {
                 res.data.email,
                 res.data.phone,
                 res.data.avatar,
-                res.data.password,
+                res.data.token,
                 res.data.group_id,
                 res.data.city,
                 res.data.geolocation,

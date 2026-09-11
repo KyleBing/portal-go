@@ -30,7 +30,7 @@ export const AUTH_LABEL: Record<AuthLevel, string> = {
 
 export const AUTH_TIP: Record<AuthLevel, string> = {
     P: '无需鉴权',
-    A: '需要 Diary-Token + Diary-Uid',
+    A: '需要 Authorization: Bearer <jwt>',
     Admin: '需要管理员（group_id = 1）',
     Cond: '公开内容可匿名，否则需主人',
     Opt: '有 token 则带身份，否则仅公开数据',
@@ -47,7 +47,7 @@ export const API_MODULES: ApiModule[] = [
         description: '注册登录、资料与账号管理',
         endpoints: [
             { method: 'POST', path: '/user/register', auth: 'P', summary: '注册（已有用户时需邀请码；首个用户为管理员）', body: 'email, password, username, nickname, invitationCode, …' },
-            { method: 'POST', path: '/user/login', auth: 'P', summary: '登录；返回用户信息，password 字段即 Diary-Token', body: 'email, password' },
+            { method: 'POST', path: '/user/login', auth: 'P', summary: '登录；返回用户信息与 token（JWT），不含 password', body: 'email, password' },
             { method: 'GET', path: '/user/avatar', auth: 'P', summary: '头像字段', params: 'email' },
             { method: 'GET', path: '/user/detail', auth: 'Cond', summary: '按二维码 hash 查（历史兼容）', params: 'hash' },
             { method: 'POST', path: '/user/list', auth: 'A', summary: '用户列表；管理员全部，否则仅自己', body: 'pageNo, pageSize' },
@@ -55,7 +55,7 @@ export const API_MODULES: ApiModule[] = [
             { method: 'PUT', path: '/user/set-profile', auth: 'A', summary: '更新个人资料', body: 'nickname, phone, avatar, city, geolocation' },
             { method: 'PUT', path: '/user/modify', auth: 'A', summary: '改资料；本人或管理员', body: 'uid, email, nickname, …' },
             { method: 'DELETE', path: '/user/delete', auth: 'Admin', summary: '删除用户', body: 'uid' },
-            { method: 'PUT', path: '/user/change-password', auth: 'A', summary: '改密后 token 会变化', body: 'password' },
+            { method: 'PUT', path: '/user/change-password', auth: 'A', summary: '改密后请重新登录', body: 'password' },
             { method: 'DELETE', path: '/user/destroy-account', auth: 'A', summary: '注销并清理关联数据' },
         ],
     },

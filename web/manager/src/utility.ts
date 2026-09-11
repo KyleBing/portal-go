@@ -70,6 +70,16 @@ function deleteAuthorization(): void {
     localStorage.removeItem(AUTHORIZATION_NAME)
 }
 
+// 续签后只更新 token，保留其它资料字段
+function updateAuthorizationToken(token: string): void {
+    const auth = getAuthorization()
+    if (!auth || !token) {
+        return
+    }
+    auth.token = token
+    localStorage.setItem(AUTHORIZATION_NAME, JSON.stringify(auth))
+}
+
 function autoScale(selector, option) {
     const el = document.getElementById(selector);
     const {width, height} = option;
@@ -135,6 +145,7 @@ export {
     getAuthorization,
     setAuthorization,
     deleteAuthorization,
+    updateAuthorizationToken,
     downloadFile,
     downloadBase64File,
     resizeHolePage,

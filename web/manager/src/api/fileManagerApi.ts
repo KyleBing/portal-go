@@ -1,6 +1,6 @@
 import { request } from './request'
 import axios from 'axios'
-import { getAuthorization } from '@/utility'
+import { getAuthorization, updateAuthorizationToken } from '@/utility'
 
 export default {
     list(params: { pageNo?: number; pageSize?: number; keywords?: string; dateFilter?: string }) {
@@ -13,11 +13,14 @@ export default {
             method: 'post',
             data: formData,
             headers: {
-                'Diary-Token': auth?.token,
-                'Diary-Uid': auth?.uid,
+                Authorization: auth?.token ? `Bearer ${auth.token}` : '',
             },
             withCredentials: true,
         }).then((res) => {
+            const renewed = res.headers?.['x-access-token']
+            if (typeof renewed === 'string' && renewed) {
+                updateAuthorizationToken(renewed)
+            }
             if (res.data?.success) return res.data
             return Promise.reject(res.data)
         })

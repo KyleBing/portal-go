@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/KyleBing/portal-go/internal/auth"
 	"github.com/KyleBing/portal-go/internal/config"
 	"github.com/KyleBing/portal-go/internal/db"
 	"github.com/KyleBing/portal-go/internal/server"
@@ -68,6 +69,9 @@ func runMigrate() {
 }
 
 func runServe() {
+	if err := auth.Init(); err != nil {
+		log.Fatalf("JWT 初始化失败: %v（请设置环境变量 JWT_SECRET）", err)
+	}
 	if _, err := config.Load(); err != nil {
 		log.Printf("加载数据库配置失败（可能尚未完成安装引导）: %v", err)
 	}

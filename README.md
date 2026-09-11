@@ -4,7 +4,7 @@ Go 重写的 Portal API，并统一托管原 `manager-src` 管理后台。
 
 ## 功能
 
-- 与原 Node Portal **API 兼容**（路径、`Diary-Token` / `Diary-Uid`、`{success,message,data}`）
+- 鉴权：`Authorization: Bearer <jwt>`（登录返回 `data.token`）；响应体 `{success,message,data}`
 - 接口说明：[docs/api.md](docs/api.md)
 - 模块：用户/用户配置/邀请码、日记/账单/银行卡、地图、二维码、五笔、文件、七牛、点赞、统计、饥荒 API、安装引导/系统配置
 - 管理后台：`/manager/`（Vue3 + Vite + Element Plus）
@@ -28,6 +28,7 @@ deploy.sh             # 一键构建 + 部署 + migrate
 
 ```bash
 go mod tidy
+export JWT_SECRET='change-me-to-a-long-random-string'
 vim config/configDatabase.json
 make backend
 ./bin/portal migrate   # 应用增量迁移

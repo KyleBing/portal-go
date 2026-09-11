@@ -13,10 +13,11 @@
 
 | 来源 | 说明 |
 |------|------|
-| Header `Diary-Token` | 登录返回的 `password` 字段（bcrypt 哈希字符串），也可用 query `?token=` |
-| Header `Diary-Uid` | 用户 `uid`（必填；缺省会提示升级后重登） |
+| Header `Authorization` | `Bearer <jwt>`；登录接口返回的 `data.token` |
+| Query `?token=` | 仅 WebSocket 等场景可用，值为同一 JWT |
 
-服务端按 `users.password = token AND uid = ?` 校验，**不是 JWT**。  
+服务端验签 HS256 JWT（claims 含 `uid`、`group_id`、`exp`），再按 `uid` 加载用户。密钥为环境变量 `JWT_SECRET`，有效期 30 天。  
+剩余有效期不足 **7 天** 时，鉴权成功后会在响应头 `X-Access-Token` 下发新 JWT，客户端应写回本地会话。  
 `group_id == 1` 为管理员。多数接口在 handler 内自行鉴权，无全局中间件。
 
 ### 响应体
@@ -78,7 +79,7 @@
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
 | POST | `/register` | P | 注册。已有用户时需邀请码（或系统全局邀请码）。首个用户为管理员 |
-| POST | `/login` | P | 登录；`data` 含用户信息，其中 `password` 即后续 `Diary-Token` |
+| POST | `/login` | P | 登录；`data` 含用户信息与 `token`（JWT），不含 password |
 | GET | `/avatar` | P | Query `email` → 头像字段 |
 | GET | `/detail` | Cond | Query `hash`：按二维码 hash 查（历史兼容） |
 | POST | `/list` | A | Body `pageNo,pageSize`；管理员看全部，否则仅自己 |
@@ -86,7 +87,7 @@
 | PUT | `/set-profile` | A | `nickname,phone,avatar,city,geolocation`（演示账号受限） |
 | PUT | `/modify` | A | 改资料；本人或管理员 |
 | DELETE | `/delete` | Admin | Body `uid` |
-| PUT | `/change-password` | A | Body `password`；改密后 token 变化 |
+| PUT | `/change-password` | A | Body `password`；改密后请重新登录 |
 | DELETE | `/destroy-account` | A | 注销并清理关联数据 |
 
 **注册 / 登录常用字段：** `email`, `password`, `username`, `nickname`, `invitationCode`, …
@@ -331,7 +332,7 @@
 | GET | `/list` | A | `pageNo,pageSize,keywords`(JSON), `dateFilter`(YYYYMM)；项含 `download_url` |
 | GET | `/download` | A | Query `fileId`；鉴权后按 uid 校验并 `ServeFile` |
 
-文件落盘在服务端 `upload/{uid}/`，文件名经 `filepath.Base` 消毒；下载须带 `Diary-Token` / `Diary-Uid`。
+文件落盘在服务端 `upload/{uid}/`，文件名经 `filepath.Base` 消毒；下载须带 `Authorization: Bearer <jwt>`。
 
 **端对端互传（WebRTC）**：`portal-ws`（`/ws`）提供**公开**房间信令：`rtc-create|join|leave|peers|offer|answer|ice`（无需登录）。文件字节经客户端 DataChannel 直连，不经本站带宽；无 TURN/文件中继。房间无信令活动 **30 分钟**后过期。个人主页 `/#/transfer` 提供互传页。
 
@@ -409,16 +410,14 @@ Content-Type: application/json
 
 ```http
 GET /portal/diary/list?pageNo=1&pageSize=20
-Diary-Token: $2a$10$....
-Diary-Uid: 3
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ```
 
 ### 保存用户配置
 
 ```http
 PUT /portal/user-config
-Diary-Token: …
-Diary-Uid: 3
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 Content-Type: application/json
 
 {

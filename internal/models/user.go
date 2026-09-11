@@ -5,7 +5,7 @@ type User struct {
 	Email           string  `json:"email"`
 	Nickname        string  `json:"nickname"`
 	Username        string  `json:"username"`
-	Password        string  `json:"password"`
+	Password        string  `json:"-"` // 不对外返回哈希
 	RegisterTime    *string `json:"register_time"`
 	LastVisitTime   *string `json:"last_visit_time"`
 	Comment         *string `json:"comment"`

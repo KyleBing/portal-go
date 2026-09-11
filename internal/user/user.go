@@ -5,8 +5,10 @@ import (
 	"strings"
 
 	"github.com/KyleBing/portal-go/internal/apihelper"
+	"github.com/KyleBing/portal-go/internal/auth"
 	"github.com/KyleBing/portal-go/internal/db"
 	"github.com/KyleBing/portal-go/internal/middleware"
+	"github.com/KyleBing/portal-go/internal/models"
 	"github.com/KyleBing/portal-go/internal/response"
 	"github.com/KyleBing/portal-go/internal/systemconfig"
 	"github.com/KyleBing/portal-go/internal/util"
@@ -173,6 +175,10 @@ func handleList(c *gin.Context) {
 	if err != nil {
 		response.Error(c, err.Error(), err.Error())
 		return
+	}
+	// 列表不返回密码哈希
+	for _, row := range list {
+		delete(row, "password")
 	}
 	util.UpdateUserLastLoginTime(user.UID)
 	response.Success(c, gin.H{
@@ -357,12 +363,24 @@ func handleLogin(c *gin.Context) {
 		response.Error(c, "", "无此用户")
 		return
 	}
-	if bcrypt.CompareHashAndPassword([]byte(apihelper.MapStr(data, "password")), []byte(apihelper.S(body, "password"))) == nil {
-		util.UpdateUserLastLoginTime(apihelper.MapInt(data, "uid"))
-		response.Success(c, data, "登录成功")
-	} else {
+	if bcrypt.CompareHashAndPassword([]byte(apihelper.MapStr(data, "password")), []byte(apihelper.S(body, "password"))) != nil {
 		response.Error(c, "", "用户名或密码错误")
+		return
 	}
+	uid := apihelper.MapInt(data, "uid")
+	u := &models.User{
+		UID:     uid,
+		GroupID: int(apihelper.MapInt(data, "group_id")),
+	}
+	token, err := auth.Issue(u)
+	if err != nil {
+		response.Error(c, "", "签发 token 失败")
+		return
+	}
+	delete(data, "password")
+	data["token"] = token
+	util.UpdateUserLastLoginTime(uid)
+	response.Success(c, data, "登录成功")
 }
 
 func handleChangePassword(c *gin.Context) {

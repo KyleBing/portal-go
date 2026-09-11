@@ -59,9 +59,9 @@
                         </div>
                         <div class="auth-box">
                             <strong>鉴权 Header</strong>
-                            <code>Diary-Token</code>（登录返回的 password）+
-                            <code>Diary-Uid</code>
-                            <ElButton size="small" text type="primary" @click="copyText('Diary-Token / Diary-Uid')">复制</ElButton>
+                            <code>Authorization: Bearer &lt;jwt&gt;</code>（登录返回的 token）
+                            <ElButton size="small" text type="primary" @click="copyText('Authorization: Bearer <jwt>')">复制</ElButton>
+                            <div class="auth-renew-tip">剩余不足 7 天时响应头会带 <code>X-Access-Token</code> 自动续签</div>
                         </div>
                     </section>
 
@@ -204,8 +204,7 @@ function curlOf(ep: ApiEndpoint) {
     const url = `https://kylebing.cn${fullPath(ep.path)}`
     const lines = [`curl -X ${ep.method} '${url}'`]
     if (ep.auth === 'A' || ep.auth === 'Admin' || ep.auth === 'Cond' || ep.auth === 'Opt') {
-        lines.push(`  -H 'Diary-Token: <token>'`)
-        lines.push(`  -H 'Diary-Uid: <uid>'`)
+        lines.push(`  -H 'Authorization: Bearer <jwt>'`)
     }
     if (ep.method !== 'GET') {
         lines.push(`  -H 'Content-Type: application/json'`)
@@ -381,6 +380,11 @@ async function copyText(text: string) {
         padding: 2px 6px;
         border-radius: 4px;
         font-size: 12px;
+    }
+    .auth-renew-tip {
+        flex: 1 0 100%;
+        font-size: 12px;
+        color: #86909c;
     }
 }
 

@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"database/sql"
-	"strconv"
 
+	"github.com/KyleBing/portal-go/internal/auth"
 	"github.com/KyleBing/portal-go/internal/db"
 	"github.com/KyleBing/portal-go/internal/models"
 	"github.com/KyleBing/portal-go/internal/response"
@@ -44,32 +44,32 @@ func GetUser(c *gin.Context) *models.User {
 	return u
 }
 
+// VerifyAuthorization 校验 Authorization: Bearer <jwt>，再按 uid 加载用户。
 func VerifyAuthorization(c *gin.Context) (*models.User, string) {
-	token := c.GetHeader("Diary-Token")
-	if token == "" {
-		token = c.Query("token")
-	}
-	uidStr := c.GetHeader("Diary-Uid")
-	if token == "" {
+	raw := auth.BearerToken(c.GetHeader("Authorization"))
+	if raw == "" {
 		return nil, "无 token"
 	}
-	if uidStr == "" {
-		return nil, "程序已升级，请关闭所有相关窗口，再重新访问该网站"
-	}
-	uid, err := strconv.ParseInt(uidStr, 10, 64)
+	claims, err := auth.Parse(raw)
 	if err != nil {
-		return nil, "身份验证失败：查无此人"
+		return nil, "身份验证失败：token 无效或已过期"
 	}
 	diary, err := db.Open(db.Diary)
 	if err != nil {
 		return nil, "mysql: 获取身份信息错误"
 	}
-	user, err := ScanUser(diary.QueryRow(`SELECT uid,email,nickname,username,password,register_time,last_visit_time,comment,wx,phone,homepage,gaode,group_id,count_diary,count_dict,count_qr,count_words,count_map_route,count_map_pointer,sync_count,avatar,city,geolocation FROM users WHERE password = ? AND uid = ?`, token, uid))
+	user, err := ScanUser(diary.QueryRow(`SELECT uid,email,nickname,username,password,register_time,last_visit_time,comment,wx,phone,homepage,gaode,group_id,count_diary,count_dict,count_qr,count_words,count_map_route,count_map_pointer,sync_count,avatar,city,geolocation FROM users WHERE uid = ?`, claims.UID))
 	if err == sql.ErrNoRows {
 		return nil, "身份验证失败：查无此人"
 	}
 	if err != nil {
 		return nil, "mysql: 获取身份信息错误"
+	}
+	// 快到期时静默续签，通过响应头交给前端更新
+	if auth.ShouldRenew(claims) {
+		if newTok, err := auth.Issue(user); err == nil {
+			c.Header(auth.HeaderRenewedToken, newTok)
+		}
 	}
 	return user, ""
 }

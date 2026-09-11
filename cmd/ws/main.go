@@ -13,12 +13,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
 
+	"github.com/KyleBing/portal-go/internal/auth"
 	"github.com/KyleBing/portal-go/internal/config"
 	"github.com/KyleBing/portal-go/internal/db"
 	"github.com/gorilla/websocket"
@@ -112,6 +112,9 @@ func now() string {
 }
 
 func main() {
+	if err := auth.Init(); err != nil {
+		log.Fatalf("JWT 初始化失败: %v（请设置环境变量 JWT_SECRET）", err)
+	}
 	if _, err := config.Load(); err != nil {
 		log.Fatalf("加载数据库配置失败: %v", err)
 	}
@@ -193,19 +196,16 @@ func serveWS(h *hub, w http.ResponseWriter, r *http.Request) {
 }
 
 func authenticate(r *http.Request) (int64, bool) {
-	token := strings.TrimSpace(r.URL.Query().Get("token"))
-	if token == "" {
-		token = strings.TrimSpace(r.Header.Get("Diary-Token"))
+	// 优先 Authorization: Bearer，其次 query ?token=
+	raw := auth.BearerToken(r.Header.Get("Authorization"))
+	if raw == "" {
+		raw = strings.TrimSpace(r.URL.Query().Get("token"))
 	}
-	uidStr := strings.TrimSpace(r.URL.Query().Get("uid"))
-	if uidStr == "" {
-		uidStr = strings.TrimSpace(r.Header.Get("Diary-Uid"))
-	}
-	if token == "" || uidStr == "" {
+	if raw == "" {
 		return 0, false
 	}
-	uid, err := strconv.ParseInt(uidStr, 10, 64)
-	if err != nil || uid <= 0 {
+	claims, err := auth.Parse(raw)
+	if err != nil || claims.UID <= 0 {
 		return 0, false
 	}
 	diary, err := db.Open(db.Diary)
@@ -213,7 +213,7 @@ func authenticate(r *http.Request) (int64, bool) {
 		return 0, false
 	}
 	var found int64
-	err = diary.QueryRow(`SELECT uid FROM users WHERE password = ? AND uid = ? LIMIT 1`, token, uid).Scan(&found)
+	err = diary.QueryRow(`SELECT uid FROM users WHERE uid = ? LIMIT 1`, claims.UID).Scan(&found)
 	if err == sql.ErrNoRows || err != nil {
 		return 0, false
 	}
