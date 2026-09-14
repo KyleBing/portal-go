@@ -35,18 +35,6 @@ const MENUS_PRESET: Array<EntityMenu> = [
                 "icon": "Folder",
                 "isNeedAdminPermission": true,
                 "children": []
-            },
-            {
-                "name": "邀请码",
-                "type": EnumMenuType['菜单'],
-                "path": "/diary/invitation",
-                "match_path": "",
-                "component": "Diary/InvitationList.vue",
-                "visible": EnumMenuVisible['可见'],
-                "redirect": "",
-                "icon": "Ticket",
-                "isNeedAdminPermission": true,
-                "children": []
             }
 
         ]
@@ -365,6 +353,18 @@ const MENUS_PRESET: Array<EntityMenu> = [
                 "redirect": "",
                 "icon": "User",
                 "isNeedAdminPermission": false,
+                "children": []
+            },
+            {
+                "name": "邀请码",
+                "type": EnumMenuType['菜单'],
+                "path": "/system/invitation",
+                "match_path": "",
+                "component": "Diary/InvitationList.vue",
+                "visible": EnumMenuVisible['可见'],
+                "redirect": "",
+                "icon": "Ticket",
+                "isNeedAdminPermission": true,
                 "children": []
             },
             {

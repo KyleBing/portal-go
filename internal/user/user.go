@@ -167,13 +167,14 @@ func handleList(c *gin.Context) {
 
 	var list []map[string]interface{}
 	var total int64
+	// 用户管理列表按 uid 倒序，新注册用户优先展示
 	if user.IsAdmin() {
-		list, err = apihelper.QueryMaps(diary, `SELECT * from `+table+` limit ?, ?`, start, pageSize)
+		list, err = apihelper.QueryMaps(diary, `SELECT * from `+table+` ORDER BY uid DESC limit ?, ?`, start, pageSize)
 		if err == nil {
 			err = diary.QueryRow(`select count(*) as sum from ` + table).Scan(&total)
 		}
 	} else {
-		list, err = apihelper.QueryMaps(diary, `SELECT * from `+table+` where uid = ? limit ?, ?`, user.UID, start, pageSize)
+		list, err = apihelper.QueryMaps(diary, `SELECT * from `+table+` where uid = ? ORDER BY uid DESC limit ?, ?`, user.UID, start, pageSize)
 		if err == nil {
 			err = diary.QueryRow(`select count(*) as sum from `+table+` where uid = ?`, user.UID).Scan(&total)
 		}
