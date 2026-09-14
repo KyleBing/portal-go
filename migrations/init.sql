@@ -236,6 +236,7 @@ CREATE TABLE `invitations`  (
   `date_create` datetime(0) NOT NULL COMMENT '创建时间',
   `date_register` datetime(0) NULL DEFAULT NULL COMMENT '注册时间',
   `binding_uid` int(255) NULL DEFAULT NULL COMMENT '注册绑定的用户',
+  `is_shared` int(1) NOT NULL DEFAULT 0 COMMENT '标记邀请码是否已被分享',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `bind_uid`(`binding_uid`) USING BTREE,
   CONSTRAINT `bind_uid` FOREIGN KEY (`binding_uid`) REFERENCES `users` (`uid`) ON DELETE RESTRICT ON UPDATE RESTRICT
@@ -263,7 +264,7 @@ CREATE TABLE `diaries` (
   PRIMARY KEY (`id`) USING BTREE,
   KEY `category_link` (`category`) USING BTREE,
   CONSTRAINT `category_link` FOREIGN KEY (`category`) REFERENCES `diary_category` (`name_en`)
-) ENGINE=InnoDB AUTO_INCREMENT=13160 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=COMPACT;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=COMPACT;
 
 -- ----------------------------
 -- Table structure for qrs

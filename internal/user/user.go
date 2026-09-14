@@ -78,8 +78,14 @@ func handleRegister(c *gin.Context) {
 	}
 }
 
+// 邮箱或用户名是否已存在；username 为空时只查邮箱（日记端注册不传 username，库中大量空 username）
 func checkEmailOrUsernameExist(diary *sql.DB, email, username string) ([]map[string]interface{}, error) {
-	return apihelper.QueryMaps(diary, `select * from `+table+` where email=? or username =?`, email, username)
+	email = strings.TrimSpace(email)
+	username = strings.TrimSpace(username)
+	if username == "" {
+		return apihelper.QueryMaps(diary, `select * from `+table+` where email=?`, email)
+	}
+	return apihelper.QueryMaps(diary, `select * from `+table+` where email=? or username=?`, email, username)
 }
 
 func registerUser(c *gin.Context, diary *sql.DB, body map[string]interface{}) {
