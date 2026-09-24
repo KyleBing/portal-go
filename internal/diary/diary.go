@@ -3,6 +3,7 @@ package diary
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/KyleBing/portal-go/internal/bill"
 	"github.com/KyleBing/portal-go/internal/db"
@@ -360,6 +361,11 @@ func handleModify(c *gin.Context) {
 		IsMarkdown         int     `json:"is_markdown"`
 	}
 	_ = c.ShouldBindJSON(&body)
+	// 芯片页数据写在公开日记里，普通用户只读
+	if strings.HasPrefix(body.Title, "apple-chip-") && !user.IsAdmin() {
+		response.Error(c, "", "需要管理员权限")
+		return
+	}
 	now := util.NowString()
 	diary, _ := db.Open(dbName)
 	_, err := diary.Exec(`update diaries set date_modify=?, date=?, category=?, title=?, content=?, weather=?, temperature=?, temperature_outside=?, is_public=?, is_markdown=? WHERE id=? and uid=?`,

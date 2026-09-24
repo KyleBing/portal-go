@@ -416,12 +416,23 @@ func wordDelete(c *gin.Context) {
 		placeholders[i] = "?"
 		args = append(args, id)
 	}
+	wubi, _ := db.Open(dbWubi)
 	query := `DELETE from ` + wordTable + ` WHERE id in (` + strings.Join(placeholders, ",") + `)`
+	// 非管理员只能删自己创建的词条
 	if !user.IsAdmin() {
+		checkArgs := append(append([]interface{}{}, args...), user.UID)
+		owned, err := db.QueryMaps(wubi, `select id from `+wordTable+` where id in (`+strings.Join(placeholders, ",")+`) and user_init = ?`, checkArgs...)
+		if err != nil {
+			response.Error(c, err.Error(), "删除失败")
+			return
+		}
+		if len(owned) != len(body.IDs) {
+			response.Error(c, "", "只能删除自己的词条")
+			return
+		}
 		query += ` and user_init = ?`
 		args = append(args, user.UID)
 	}
-	wubi, _ := db.Open(dbWubi)
 	_, err := wubi.Exec(query, args...)
 	if err != nil {
 		response.Error(c, err.Error(), "五笔词条删除失败")
@@ -435,6 +446,10 @@ func wordModifyBatch(c *gin.Context) {
 	user, msg := middleware.VerifyAuthorization(c)
 	if msg != "" {
 		response.Error(c, "", "无权操作")
+		return
+	}
+	if !user.IsAdmin() {
+		response.Error(c, "", "需要管理员权限")
 		return
 	}
 	var body map[string]interface{}

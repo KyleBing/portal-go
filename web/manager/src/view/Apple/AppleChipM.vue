@@ -3,8 +3,8 @@
         <Toolbar>
             <template #left>
                 <ElButton type="primary" @click="loadData" :loading="isLoading" icon="Refresh">刷新数据</ElButton>
-                <ElButton type="success" @click="saveAllData" :loading="isSaving" :disabled="!diaryId || chipList.length === 0" icon="Check">保存全部</ElButton>
-                <ElButton type="primary" @click="addChip" icon="Plus">添加芯片</ElButton>
+                <ElButton v-if="isAdmin" type="success" @click="saveAllData" :loading="isSaving" :disabled="!diaryId || chipList.length === 0" icon="Check">保存全部</ElButton>
+                <ElButton v-if="isAdmin" type="primary" @click="addChip" icon="Plus">添加芯片</ElButton>
             </template>
 
         </Toolbar>
@@ -14,7 +14,7 @@
                 :data="chipList" 
                 stripe 
                 style="width: 100%" 
-                @row-click="editChip"
+                @row-click="onRowClick"
                 row-key="name"
                 ref="tableRef"
             >
@@ -78,7 +78,7 @@
                             {{ row.ai?.core || '-' }}
                         </template>
                     </ElTableColumn>
-                    <ElTableColumn label="操作" width="250" fixed="right">
+                    <ElTableColumn v-if="isAdmin" label="操作" width="250" fixed="right">
                         <template #default="{ $index }">
                             <ElButton type="primary" size="small" @click.stop="editChipByIndex($index)" icon="Edit">编辑</ElButton>
                             <ElButton type="warning" size="small" @click.stop="cloneChip($index)" icon="CopyDocument">克隆</ElButton>
@@ -97,7 +97,7 @@
             :close-on-click-modal="false"
             :before-close="handleDialogClose"
         >
-            <ElForm :model="editingChip" label-width="100px" v-if="editingChip">
+            <ElForm :model="editingChip" label-width="100px" v-if="editingChip" :disabled="!isAdmin">
                 <ElRow :gutter="15">
                     <ElCol :span="8">
                         <ElFormItem label="名称">
@@ -306,7 +306,7 @@
                 <div style="display: flex; justify-content: space-between;">
                     <ElButton @click="dialogVisible = false">取消</ElButton>
                     <div>
-                        <ElButton type="primary" @click="handleSaveButton" :loading="isSavingChip" icon="Check">保存此芯片</ElButton>
+                        <ElButton v-if="isAdmin" type="primary" @click="handleSaveButton" :loading="isSavingChip" icon="Check">保存此芯片</ElButton>
                     </div>
                 </div>
             </template>
@@ -322,9 +322,10 @@ import diaryApi from "@/api/diaryApi"
 import Container from "@/layout/Container.vue"
 import Toolbar from "@/layout/Toolbar.vue"
 import Content from "@/layout/Content.vue"
-import { dateFormatter } from "@/utility"
+import { dateFormatter, getAuthorization } from "@/utility"
 import { Chip, CpuConfig, GpuConfig } from "@/model/appleChip"
 
+const isAdmin = computed(() => Number(getAuthorization()?.group_id) === 1)
 const isLoading = ref(false)
 const isSaving = ref(false)
 const isSavingChip = ref(false)
@@ -803,7 +804,13 @@ const saveAllData = () => {
 }
 
 // 初始化拖拽排序
+const onRowClick = (row: Chip) => {
+    if (!isAdmin.value) return
+    editChip(row)
+}
+
 const initSortable = () => {
+    if (!isAdmin.value) return
     if (sortableInstance) {
         sortableInstance.destroy()
         sortableInstance = null

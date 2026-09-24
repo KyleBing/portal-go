@@ -44,17 +44,15 @@ func handleOverview(c *gin.Context) {
 			(SELECT COUNT(*) FROM wubi.wubi_words where approved = 0) as count_wubi_words_unapproved,
 			(SELECT COUNT(*) FROM wubi.wubi_words where approved = 0 and user_init = ? ) as count_wubi_words_unapproved_user`, user.UID)
 	} else {
+		// 全站词条总数、待审核数仅管理员可见
 		row, err = db.QueryMap(diary, `SELECT
 			(SELECT COUNT(*) FROM diaries where uid = ?) as count_diary,
 			(SELECT COUNT(*) FROM qrs where uid = ?) as count_qr,
-			(SELECT COUNT(*) FROM users where uid = ?) as count_user,
 			(SELECT COUNT(*) FROM diary_category) as count_category,
 			(SELECT COUNT(*) FROM diaries where uid = ? and category = 'bill') as count_bill,
 			(SELECT COUNT(*) FROM wubi.wubi_dict where uid = ?) as count_dict,
-			(SELECT COUNT(*) FROM wubi.wubi_words ) as count_wubi_words,
-			(SELECT COUNT(*) FROM wubi.wubi_words where approved = 0) as count_wubi_words_unapproved,
 			(SELECT COUNT(*) FROM wubi.wubi_words where approved = 0 and user_init = ? ) as count_wubi_words_unapproved_user`,
-			user.UID, user.UID, user.UID, user.UID, user.UID, user.UID)
+			user.UID, user.UID, user.UID, user.UID, user.UID)
 	}
 	if err != nil {
 		response.Error(c, "", err.Error())

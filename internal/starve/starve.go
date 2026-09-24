@@ -229,6 +229,10 @@ func handleAdd(c *gin.Context, e entityWrite) {
 		response.Error(c, "", msg)
 		return
 	}
+	if !user.IsAdmin() {
+		response.Error(c, "", "需要管理员权限")
+		return
+	}
 	var body map[string]interface{}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.Error(c, err.Error(), "参数错误")
@@ -276,6 +280,10 @@ func handleModify(c *gin.Context, e entityWrite) {
 		response.Error(c, "", msg)
 		return
 	}
+	if !user.IsAdmin() {
+		response.Error(c, "", "需要管理员权限")
+		return
+	}
 	var body map[string]interface{}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		response.Error(c, err.Error(), "参数错误")
@@ -316,6 +324,10 @@ func handleDelete(c *gin.Context, table string) {
 	user, msg := middleware.VerifyAuthorization(c)
 	if msg != "" {
 		response.Error(c, "", msg)
+		return
+	}
+	if !user.IsAdmin() {
+		response.Error(c, "", "需要管理员权限")
 		return
 	}
 	var body struct {

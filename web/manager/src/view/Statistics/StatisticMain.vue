@@ -3,14 +3,14 @@
         <Toolbar>
         </Toolbar>
         <Content>
-            <div class="card-charts">
+            <div v-if="isAdmin" class="card-charts">
                 <StatisticUserWordCount/>
                 <StatisticUserDiaryCount/>
             </div>
             <div class="card-cards">
                 <template v-for="item in statistics" :key="item.name">
                     <statistic-count-card
-                        v-if="nameMap.get(item.name).userPermission.includes(userInfo.group_id) && item.value > 0"
+                        v-if="nameMap.get(item.name)?.userPermission.includes(Number(userInfo?.group_id)) && item.value > 0"
                         :title="nameMap.get(item.name).name"
                         :icon="nameMap.get(item.name).icon"
                         :color="nameMap.get(item.name).color"
@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, defineAsyncComponent } from 'vue';
+import { ref, computed, onMounted, defineAsyncComponent } from 'vue';
 import statisticApi from "@/api/statisticApi";
 import { getAuthorization } from "@/utility";
 import StatisticCountCard from "@/view/Statistics/StatisticCountCard.vue";
@@ -60,6 +60,7 @@ const COLORS = {
 };
 
 const userInfo = ref(getAuthorization());
+const isAdmin = computed(() => Number(userInfo.value?.group_id) === 1);
 const statistics = ref<StatisticItem[]>([]);
 const nameMap = ref(new Map<string, NameMapItem>([
     ["count_bill", {userPermission: [1, 2], name: '账单', icon: 'CreditCard', color: COLORS.green}],
@@ -68,8 +69,8 @@ const nameMap = ref(new Map<string, NameMapItem>([
     ["count_qr", {userPermission: [1, 2], name: '二维码', icon: 'FullScreen', color: COLORS.gray}],
     ["count_user", {userPermission: [1], name: '用户', icon: 'user', color: COLORS.magenta}],
     ["count_dict", {userPermission: [1, 2], name: '已同步五笔码表', icon: 'tickets', color: COLORS.purple}],
-    ["count_wubi_words", {userPermission: [1, 2], name: '五笔词条总数', icon: 'PieChart', color: COLORS.red}],
-    ["count_wubi_words_unapproved", {userPermission: [1, 2], name: '待审核五笔词条', icon: 'finished', color: COLORS.red}],
+    ["count_wubi_words", {userPermission: [1], name: '五笔词条总数', icon: 'PieChart', color: COLORS.red}],
+    ["count_wubi_words_unapproved", {userPermission: [1], name: '待审核五笔词条', icon: 'finished', color: COLORS.red}],
     ["count_wubi_words_unapproved_user", {userPermission: [1, 2], name: '我的待审核词条', icon: 'finished', color: COLORS.red}]
 ]));
 

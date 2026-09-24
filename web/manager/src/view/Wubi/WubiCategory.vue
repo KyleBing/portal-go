@@ -6,7 +6,7 @@
             <template #center>
             </template>
             <template #right>
-                <ElButton type="success" @click="addNewDiaryCategory" icon="Plus"> 添加</ElButton>
+                <ElButton v-if="isAdmin" type="success" @click="addNewDiaryCategory" icon="Plus"> 添加</ElButton>
             </template>
         </Toolbar>
         <Content padding="0">
@@ -22,10 +22,10 @@
                                 <TableListDate :dates="[scope.row.date_init]" :names="['创建']"/>
                             </template>
                         </ElTableColumn>
-                        <ElTableColumn align="left" label="操作" width="">
+                        <ElTableColumn v-if="isAdmin" align="left" label="操作" width="">
                             <template #default="scope">
-                                <ElButton @click="goEdit(scope.row)" type="primary" icon="Edit" plain size="small"> 编辑</ElButton>
-                                <ElButton @click="goDelete(scope.row)" type="danger" icon="delete" plain size="small"> 删除</ElButton>
+                                <ElButton v-if="isAdmin" @click="goEdit(scope.row)" type="primary" icon="Edit" plain size="small"> 编辑</ElButton>
+                                <ElButton v-if="isAdmin" @click="goDelete(scope.row)" type="danger" icon="delete" plain size="small"> 删除</ElButton>
                             </template>
                         </ElTableColumn>
                     </ElTable>
@@ -108,7 +108,7 @@ const modalTitle = computed(() => editingCategoryId.value ? '编辑类别' : '�
 
 onMounted(() => {
     getCategoryList();
-    isAdmin.value = getAuthorization().email === 'kylebing@163.com';
+    isAdmin.value = Number(getAuthorization()?.group_id) === 1;
 });
 
 function addNewDiaryCategory() {

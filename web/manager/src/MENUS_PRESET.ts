@@ -159,7 +159,7 @@ const MENUS_PRESET: Array<EntityMenu> = [
         "visible": EnumMenuVisible['可见'],
         "redirect": "/starve/mob",
         "icon": "Food",
-        "isNeedAdminPermission": false,
+        "isNeedAdminPermission": true,
         "children": [
             {
                 "name": "日志管理",
@@ -292,7 +292,7 @@ const MENUS_PRESET: Array<EntityMenu> = [
         "visible": EnumMenuVisible['可见'],
         "redirect": "/apple/chip-a",
         "icon": "Apple",
-        "isNeedAdminPermission": false,
+        "isNeedAdminPermission": true,
         "children": [
             {
                 "name": "A 系列芯片",
@@ -400,7 +400,7 @@ const MENUS_PRESET: Array<EntityMenu> = [
                 "visible": EnumMenuVisible['可见'],
                 "redirect": "",
                 "icon": "Document",
-                "isNeedAdminPermission": false,
+                "isNeedAdminPermission": true,
                 "children": []
             },
         ]

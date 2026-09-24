@@ -8,7 +8,7 @@
                         <ElButton type="success" @click="addNewWordBatch" icon="Upload"> 批量添加</ElButton>
                         <ElButton v-if="isAdmin" type="primary" @click="showModalModifyBatchCategory" icon="MagicStick"> 修改类别</ElButton>
                         <ElButton v-if="isAdmin" type="primary" @click="showModalModifyBatchApproved" icon="MagicStick"> 修改状态</ElButton>
-                        <ElButton type="danger" @click="deleteBatch" icon="Delete"> 删除</ElButton>
+                        <ElButton v-if="isAdmin" type="danger" @click="deleteBatch" icon="Delete"> 删除</ElButton>
                     </ElFormItem>
                     <ElFormItem label="审核状态" class="ml-2">
                         <ElSelect v-model="formSearch.approved" style="width: 100px">
@@ -435,7 +435,8 @@ const dict = ref<DictOther | null>(null)
 
 // Computed
 const modalTitle = computed(() => editingWordId.value ? '编辑词条' : '新增词条')
-const isAdmin = computed(() => getAuthorization().email === 'kylebing@163.com')
+// 与后端 IsAdmin 一致：group_id = 1
+const isAdmin = computed(() => Number(getAuthorization()?.group_id) === 1)
 const selfUid = computed(() => getAuthorization().uid)
 
 // Form validation rules

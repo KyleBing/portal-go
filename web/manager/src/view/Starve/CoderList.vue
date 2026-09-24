@@ -19,7 +19,7 @@
             <template #center>
             </template>
             <template #right>
-                <ElButton type="success" icon="Plus" @click="addNewCoder()"> 添加</ElButton>
+                <ElButton v-if="isAdmin" type="success" icon="Plus" @click="addNewCoder()"> 添加</ElButton>
             </template>
         </Toolbar>
 
@@ -47,8 +47,8 @@
                         <ElTableColumn prop="note" label="备注" show-overflow-tooltip/>
                         <ElTableColumn align="center" width="200" label="操作" fixed="right">
                             <template #default="scope">
-                                <ElButton @click="goEdit(scope.row)" type="primary" icon="edit" plain size="small">编辑</ElButton>
-                                <ElButton @click="goDelete(scope.row)" type="danger" icon="delete" plain size="small">删除</ElButton>
+                                <ElButton v-if="isAdmin" @click="goEdit(scope.row)" type="primary" icon="edit" plain size="small">编辑</ElButton>
+                                <ElButton v-if="isAdmin" @click="goDelete(scope.row)" type="danger" icon="delete" plain size="small">删除</ElButton>
                             </template>
                         </ElTableColumn>
                     </ElTable>
@@ -96,6 +96,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import starveApi from "@/api/starveApi"
+import { getAuthorization } from "@/utility"
 import { useProjectStore } from "@/pinia"
 import Container from "@/layout/Container.vue";
 import Toolbar from "@/layout/Toolbar.vue";
@@ -104,6 +105,8 @@ import FooterPagination from "@/layout/FooterPagination.vue";
 import { Coder } from "@/model/starve";
 
 const projectStore = useProjectStore()
+// 饥荒数据普通用户只读
+const isAdmin = computed(() => Number(getAuthorization()?.group_id) === 1)
 const isLoading = ref(false)
 const tableData = ref<Coder[]>([])
 const allData = ref<Coder[]>([])
