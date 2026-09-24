@@ -15,6 +15,7 @@ import (
 	"github.com/KyleBing/portal-go/internal/db"
 	"github.com/KyleBing/portal-go/internal/server"
 	"github.com/KyleBing/portal-go/internal/version"
+	"github.com/KyleBing/portal-go/internal/wubi"
 )
 
 func main() {
@@ -64,6 +65,9 @@ func runMigrate() {
 	}
 	if err := db.Migrate(diary); err != nil {
 		log.Fatalf("migrate 失败: %v", err)
+	}
+	if err := wubi.MigratePlaintext(); err != nil {
+		log.Fatalf("wubi migrate 失败: %v", err)
 	}
 	log.Println("migrate 完成")
 }

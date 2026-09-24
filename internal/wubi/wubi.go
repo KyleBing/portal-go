@@ -43,7 +43,8 @@ func dictPull(c *gin.Context) {
 		return
 	}
 	row := rows[0]
-	row["title"] = util.UnicodeDecode(asString(row["title"]))
+	row["title"] = PlainText(asString(row["title"]))
+	row["content"] = PlainText(asString(row["content"]))
 	util.UpdateUserLastLoginTime(user.UID)
 	response.Success(c, row, "")
 }
@@ -62,12 +63,14 @@ func dictPush(c *gin.Context) {
 	}
 	_ = c.ShouldBindJSON(&body)
 	now := util.NowString()
-	encodedTitle := util.UnicodeEncode(body.Title)
+	// 标题、正文按原文入库；客户端若仍上传 base64，这里先还原
+	title := PlainText(body.Title)
+	content := PlainText(body.Content)
 	wubi, _ := db.Open(dbWubi)
-	exist, _ := db.QueryMaps(wubi, `select * from `+dictTable+` where title=? and uid=?`, encodedTitle, user.UID)
+	exist, _ := db.QueryMaps(wubi, `select * from `+dictTable+` where title=? and uid=?`, title, user.UID)
 	if len(exist) > 0 {
 		_, err := wubi.Exec(`update `+dictTable+` set title=?, content=?, content_size=?, word_count=?, date_update=? WHERE title=? and uid=?`,
-			encodedTitle, body.Content, body.ContentSize, body.WordCount, now, encodedTitle, user.UID)
+			title, content, len(content), body.WordCount, now, title, user.UID)
 		if err != nil {
 			response.Error(c, err.Error(), "上传失败")
 			return
@@ -81,7 +84,7 @@ func dictPush(c *gin.Context) {
 	}
 	res, err := wubi.Exec(`INSERT into `+dictTable+`(title, content, content_size, word_count, date_init, date_update, comment, uid)
 		VALUES(?,?,?,?,?,?,'',?)`,
-		encodedTitle, body.Content, body.ContentSize, body.WordCount, now, now, user.UID)
+		title, content, len(content), body.WordCount, now, now, user.UID)
 	if err != nil {
 		response.Error(c, err.Error(), "上传失败")
 		return
@@ -166,7 +169,7 @@ func wordList(c *gin.Context) {
 		var parts []string
 		for _, k := range strings.Split(kw, " ") {
 			parts = append(parts, "( wubi_words.word like ? ESCAPE '/'  or  wubi_words.code like ? ESCAPE '/' or wubi_words.comment like ? ESCAPE '/')")
-			like := "%" + util.UnicodeEncode(k) + "%"
+			like := "%" + k + "%"
 			args = append(args, like, like, like)
 		}
 		filters = append(filters, strings.Join(parts, " and "))
@@ -210,7 +213,7 @@ func wordList(c *gin.Context) {
 		return
 	}
 	for _, item := range list {
-		item["word"] = util.UnicodeDecode(asString(item["word"]))
+		item["word"] = PlainText(asString(item["word"]))
 	}
 	util.UpdateUserLastLoginTime(user.UID)
 	var total interface{} = 0
@@ -244,7 +247,7 @@ func wordExportExtra(c *gin.Context) {
 		return
 	}
 	for _, item := range list {
-		item["word"] = util.UnicodeDecode(asString(item["word"]))
+		item["word"] = PlainText(asString(item["word"]))
 	}
 	response.Success(c, list, "请求成功")
 }
@@ -262,10 +265,13 @@ func wordCheckExist(c *gin.Context) {
 	_ = c.ShouldBindJSON(&body)
 	wubi, _ := db.Open(dbWubi)
 	list, err := db.QueryMaps(wubi, `select * from `+wordTable+` where word like ? and code like ? limit 5`,
-		"%"+util.UnicodeEncode(body.Word)+"%", body.Code+"%")
+		"%"+body.Word+"%", body.Code+"%")
 	if err != nil {
 		response.Error(c, err.Error(), "查询失败")
 		return
+	}
+	for _, item := range list {
+		item["word"] = PlainText(asString(item["word"]))
 	}
 	response.Success(c, list, "查询成功")
 	util.UpdateUserLastLoginTime(user.UID)
@@ -299,7 +305,7 @@ func wordAdd(c *gin.Context) {
 	wubi, _ := db.Open(dbWubi)
 	res, err := wubi.Exec(`INSERT into `+wordTable+`(word, code, priority, up, down, date_create, date_modify, comment, user_init, user_modify, category_id, approved)
 		VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`,
-		util.UnicodeEncode(body.Word), body.Code, body.Priority, body.Up, body.Down, now, now, body.Comment, user.UID, user.UID, categoryID, isApproved)
+		body.Word, body.Code, body.Priority, body.Up, body.Down, now, now, body.Comment, user.UID, user.UID, categoryID, isApproved)
 	if err != nil {
 		response.Error(c, err.Error(), "添加失败")
 		return
@@ -347,7 +353,7 @@ func wordAddBatch(c *gin.Context) {
 		}
 		_, err := wubi.Exec(`INSERT into `+wordTable+`(word, code, priority, date_create, date_modify, comment, user_init, user_modify, category_id, approved)
 			VALUES(?,?,?,?,?,?,?,?,?,?)`,
-			util.UnicodeEncode(w.Word), w.Code, w.Priority, now, now, w.Comment, user.UID, user.UID, categoryID, isApproved)
+			w.Word, w.Code, w.Priority, now, now, w.Comment, user.UID, user.UID, categoryID, isApproved)
 		if err != nil {
 			response.Error(c, err.Error(), "添加失败")
 			return
@@ -382,7 +388,7 @@ func wordModify(c *gin.Context) {
 	}
 	wubi, _ := db.Open(dbWubi)
 	query := `update ` + wordTable + ` set date_modify=?, word=?, code=?, priority=?, up=?, down=?, comment=?, category_id=?, user_modify=?, approved=? WHERE id=?`
-	args := []interface{}{now, util.UnicodeEncode(body.Word), body.Code, body.Priority, body.Up, body.Down, body.Comment, body.CategoryID, user.UID, isApproved, body.ID}
+	args := []interface{}{now, body.Word, body.Code, body.Priority, body.Up, body.Down, body.Comment, body.CategoryID, user.UID, isApproved, body.ID}
 	if !user.IsAdmin() {
 		query += ` and user_init = ?`
 		args = append(args, user.UID)
