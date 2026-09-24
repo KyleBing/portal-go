@@ -19,8 +19,9 @@ deploy:
 tidy:
 	go mod tidy
 
+# 本地启动：自动加载 deploy.env（JWT / 邮件等），不提交到 git
 run:
-	./bin/portal
+	@if [ -f deploy.env ]; then set -a; . ./deploy.env; set +a; fi; ./bin/portal
 
 docker:
 	docker build -t portal-go:latest .

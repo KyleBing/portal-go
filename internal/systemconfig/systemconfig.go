@@ -342,8 +342,8 @@ func syncDemoAccountUser(diary *sql.DB, cfg SystemConfig) {
 		now := util.NowString()
 		nickname := deriveDemoNickname(email)
 		username := pickUniqueDemoUsername(diary, deriveDemoUsernameBase(email))
-		_, _ = diary.Exec(`INSERT INTO `+usersTable+`(email, nickname, username, password, register_time, last_visit_time, comment, wx, phone, homepage, gaode, group_id)
-            VALUES (?,?,?,?,?,?,'','','','','',2)`, email, nickname, username, string(hash), now, now)
+		_, _ = diary.Exec(`INSERT INTO `+usersTable+`(email, nickname, username, password, email_verified_at, register_time, last_visit_time, comment, wx, phone, homepage, group_id)
+            VALUES (?,?,?,?,?,?,?,'','','','',2)`, email, nickname, username, string(hash), now, now, now)
 		return
 	}
 	if err != nil {

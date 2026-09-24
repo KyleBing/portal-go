@@ -105,13 +105,13 @@ CREATE TABLE `users` (
   `nickname` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL COMMENT '昵称',
   `username` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL COMMENT '用户名',
   `password` varchar(100) NOT NULL COMMENT '密码',
+  `email_verified_at` datetime DEFAULT NULL COMMENT '邮箱验证时间',
   `register_time` datetime DEFAULT NULL COMMENT '注册时间',
   `last_visit_time` datetime DEFAULT NULL COMMENT '最后访问时间',
   `comment` varchar(255) DEFAULT NULL COMMENT '注释',
   `wx` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin DEFAULT '' COMMENT '微信二维码',
   `phone` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin DEFAULT NULL COMMENT '手机号',
   `homepage` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin DEFAULT NULL COMMENT '个人主页',
-  `gaode` varchar(250) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin DEFAULT NULL COMMENT '高德组队邀请码',
   `group_id` int(11) NOT NULL DEFAULT 2 COMMENT '用户组别ID',
   `count_diary` int(8) DEFAULT 0 COMMENT '数量 - 日记',
   `count_dict` int(8) DEFAULT 0 COMMENT '数量 - 码表',
@@ -128,6 +128,22 @@ CREATE TABLE `users` (
   KEY `group_id` (`group_id`) USING BTREE,
   CONSTRAINT `group_id` FOREIGN KEY (`group_id`) REFERENCES `user_group` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2526 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=COMPACT;
+
+-- ----------------------------
+-- Table structure for email_tokens
+-- ----------------------------
+DROP TABLE IF EXISTS `email_tokens`;
+CREATE TABLE `email_tokens` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `uid` INT(11) NOT NULL,
+  `purpose` ENUM('verify', 'reset') NOT NULL,
+  `token_hash` CHAR(64) NOT NULL COMMENT 'SHA-256 hex of raw token',
+  `expires_at` DATETIME NOT NULL,
+  `used_at` DATETIME NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_email_tokens_hash` (`token_hash`),
+  KEY `idx_email_tokens_uid` (`uid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 -- ----------------------------
@@ -283,7 +299,6 @@ CREATE TABLE `qrs`  (
   `wx_code_img` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL COMMENT '微信二维码图片地址',
   `is_show_wx` int(11) NOT NULL DEFAULT 0 COMMENT '微信二维码 - 显示开关',
   `is_show_homepage` int(11) NOT NULL DEFAULT 0 COMMENT '个人主页 - 显示开关',
-  `is_show_gaode` int(11) NOT NULL DEFAULT 0 COMMENT '高德组队邀请码 - 显示开关',
   `date_modify` datetime(0) NULL DEFAULT NULL COMMENT '最后编辑日期',
   `date_init` datetime(0) NULL DEFAULT NULL COMMENT '注册时间',
   `visit_count` int(11) NOT NULL DEFAULT 0 COMMENT '被访问次数',

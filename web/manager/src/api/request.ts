@@ -44,7 +44,14 @@ function request(
     * 给 requestData 添加 authorization 内部的数据： username email uid 等等
     * */
     const path = url.replace(/^\/+/, '')
-    if (path !== 'user/login' && path !== 'user/register'){ // 注册和登录时不添加 Token
+    const publicPaths = new Set([
+        'user/login',
+        'user/register',
+        'user/forgot',
+        'user/resend-verify',
+        'user/reset',
+    ])
+    if (!publicPaths.has(path)){ // 公开认证接口不添加 Token
         const auth = getAuthorization()
         if (auth?.token) {
             Object.assign(headers, {

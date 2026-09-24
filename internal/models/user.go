@@ -6,13 +6,13 @@ type User struct {
 	Nickname        string  `json:"nickname"`
 	Username        string  `json:"username"`
 	Password        string  `json:"-"` // 不对外返回哈希
+	EmailVerifiedAt *string `json:"email_verified_at"`
 	RegisterTime    *string `json:"register_time"`
 	LastVisitTime   *string `json:"last_visit_time"`
 	Comment         *string `json:"comment"`
 	Wx              *string `json:"wx"`
 	Phone           *string `json:"phone"`
 	Homepage        *string `json:"homepage"`
-	Gaode           *string `json:"gaode"`
 	GroupID         int     `json:"group_id"`
 	CountDiary      int     `json:"count_diary"`
 	CountDict       int     `json:"count_dict"`
@@ -28,6 +28,10 @@ type User struct {
 
 func (u *User) IsAdmin() bool {
 	return u.GroupID == 1
+}
+
+func (u *User) EmailVerified() bool {
+	return u.EmailVerifiedAt != nil && *u.EmailVerifiedAt != ""
 }
 
 type Pager struct {

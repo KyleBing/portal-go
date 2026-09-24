@@ -186,11 +186,6 @@
                         </ElFormItem>
                     </ElCol>
                     <ElCol :xs="24" :md="8">
-                        <ElFormItem class="mb-0" label="展示高德组队" prop="is_show_gaode">
-                            <ElSwitch :active-value="1" :inactive-value="0" v-model="formCode.is_show_gaode"/>
-                        </ElFormItem>
-                    </ElCol>
-                    <ElCol :xs="24" :md="8">
                         <ElFormItem class="mb-0" label="展示主页" prop="is_show_homepage">
                             <ElSwitch :active-value="1" :inactive-value="0" v-model="formCode.is_show_homepage"/>
                         </ElFormItem>
@@ -320,7 +315,6 @@ interface Code {
     is_public: number
     is_show_phone: number
     is_show_homepage: number
-    is_show_gaode: number
     message: string
     description: string
     is_show_wx: number
@@ -357,7 +351,6 @@ const formCode = ref<Code>({
     is_public: 0,
     is_show_phone: 0,
     is_show_homepage: 0,
-    is_show_gaode: 0,
     message: '',
     description: '',
     is_show_wx: 0,
@@ -465,7 +458,6 @@ function clearForm() {
         is_public: 0,
         is_show_phone: 0,
         is_show_homepage: 0,
-        is_show_gaode: 0,
         message: '',
         description: '',
         is_show_wx: 0,

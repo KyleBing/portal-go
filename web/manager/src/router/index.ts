@@ -19,6 +19,11 @@ const ROUTE_FIXED: Array<RouteRecordRaw> =  [
         component: () => import('../view/Login.vue')
     },
     {
+        name: 'Register', path: '/register',
+        meta: {isAdmin: false, title: '注册', isShowInMenu: false, icon: 'UserFilled',},
+        component: () => import('../view/Register.vue')
+    },
+    {
         name: 'Logout', path: '/logout',
         meta: {isAdmin: false, title: '退出登录', isShowInMenu: false, icon: 'SwitchButton',},
         component: () => import('../view/Logout.vue')

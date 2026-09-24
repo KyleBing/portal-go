@@ -24,12 +24,18 @@
                     >
                         <ElTableColumn width="60" prop="uid" label="UID"/>
                         <ElTableColumn width="200" prop="email" label="Email"/>
+                        <ElTableColumn width="90" align="center" label="邮箱验证">
+                            <template #default="{row}">
+                                <span :class="row.email_verified_at ? 'verified' : 'unverified'">
+                                    {{ row.email_verified_at ? '已验证' : '未验证' }}
+                                </span>
+                            </template>
+                        </ElTableColumn>
                         <ElTableColumn width="150" prop="nickname" label="昵称"/>
                         <ElTableColumn width="100" align="center" prop="username" label="用户名"/>
                         <ElTableColumn width="150" align="center" prop="phone" label="手机号"/>
                         <ElTableColumn width="100" align="center" prop="wx" label="微信"/>
 <!--                        <ElTableColumn align="center" width="100" prop="homepage" label="主页"/>-->
-<!--                        <ElTableColumn align="right" prop="gaode" label="高德组队码"/>-->
                         <ElTableColumn sortable align="right" width="60" prop="count_diary" label="日记"/>
                         <ElTableColumn sortable align="right" width="60" prop="count_dict" label="码表"/>
                         <ElTableColumn sortable align="right" width="60" prop="count_qr" label="二维码"/>
@@ -50,9 +56,11 @@
                                 {{ scope.row.group_id === 1 ? '管理员' : '普通' }}
                             </template>
                         </ElTableColumn>
-                        <ElTableColumn align="center" width="200" label="操作">
+                        <ElTableColumn align="center" width="320" label="操作">
                             <template #default="scope">
                                 <ElButton @click="goEdit(scope.row)" type="primary" icon="edit" plain size="small">编辑</ElButton>
+                                <ElButton v-if="!scope.row.email_verified_at" @click="forceVerify(scope.row)" type="success" plain size="small">强制验证</ElButton>
+                                <ElButton @click="sendReset(scope.row)" type="warning" plain size="small">重置密码</ElButton>
                                 <ElButton @click="goDelete(scope.row)" type="danger" icon="delete" plain size="small">删除</ElButton>
                             </template>
                         </ElTableColumn>
@@ -93,9 +101,6 @@
                 </ElFormItem>
                 <ElFormItem label="手机" prop="phone">
                     <ElInput autocomplete="off" v-model="formUser.phone"/>
-                </ElFormItem>
-                <ElFormItem label="高德组队码" prop="gaode">
-                    <ElInput autocomplete="off" v-model="formUser.gaode"/>
                 </ElFormItem>
                 <ElFormItem label="组别" prop="group_id">
                     <ElSelect :disabled="!isAdmin" v-model="formUser.group_id" placeholder="请选择">
@@ -141,7 +146,6 @@ interface User {
     wx: string
     phone: string
     homepage: string
-    gaode: string
     group_id: number
     count_diary: number
     count_dict: number
@@ -150,6 +154,7 @@ interface User {
     sync_count: number
     register_time: string
     last_visit_time: string
+    email_verified_at?: string | null
 }
 
 interface GroupOption {
@@ -184,7 +189,6 @@ const formUser = ref<User>({
     wx: '',
     phone: '',
     homepage: '',
-    gaode: '',
     group_id: 2,
     count_diary: 0,
     count_dict: 0,
@@ -215,7 +219,6 @@ const userRules = {
     wx: { required: true, message: '请填写微信', trigger: 'blur' },
     phone: { required: true, message: '请填写手机号', trigger: 'blur' },
     homepage: '',
-    gaode: '',
     group_id: { required: true, message: '请选择组别', trigger: 'blur' }
 }
 
@@ -242,7 +245,6 @@ function clearForm() {
         wx: '',
         phone: '',
         homepage: '',
-        gaode: '',
         group_id: 2,
         count_diary: 0,
         count_dict: 0,
@@ -316,6 +318,35 @@ function goDelete(user: User) {
     })
 }
 
+// 管理员强制标记邮箱已验证
+function forceVerify(user: User) {
+    ElMessageBox.confirm(`将 ${user.email} 标记为已验证？`, '强制验证', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+    }).then(() => {
+        userApi.forceVerify({ uid: user.uid })
+            .then((res: any) => {
+                ElMessage.success(res.message || '已标记为已验证')
+                getUserList()
+            })
+    }).catch(() => {})
+}
+
+// 管理员向用户邮箱发送重置密码链接
+function sendReset(user: User) {
+    ElMessageBox.confirm(`向 ${user.email} 发送重置密码邮件？`, '重置密码', {
+        confirmButtonText: '发送',
+        cancelButtonText: '取消',
+        type: 'warning'
+    }).then(() => {
+        userApi.sendResetPassword({ uid: user.uid })
+            .then((res: any) => {
+                ElMessage.success(res.message || '重置密码邮件已发送')
+            })
+    }).catch(() => {})
+}
+
 function submit() {
     if (!register.value) return
     register.value.validate((valid) => {
@@ -369,4 +400,6 @@ onMounted(() => {
     height: 100%;
     overflow: auto;
 }
+.verified { color: #67c23a; }
+.unverified { color: #e6a23c; }
 </style>

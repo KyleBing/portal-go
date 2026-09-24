@@ -78,12 +78,19 @@
 
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
-| POST | `/register` | P | 注册。已有用户时需邀请码（或系统全局邀请码）。首个用户为管理员 |
-| POST | `/login` | P | 登录；`data` 含用户信息与 `token`（JWT），不含 password |
+| POST | `/register` | P | 注册。已有用户时需邀请码。首个用户为管理员并自动验证邮箱；其余用户需邮件验证后才能登录 |
+| POST | `/login` | P | 登录；未验证邮箱返回 `data.code=email_not_verified`；成功时 `data` 含用户信息与 `token` |
+| GET | `/verify` | P | Query `token`：邮件链接验证邮箱（返回 HTML） |
+| POST | `/resend-verify` | P | Body `email`：重发验证邮件 |
+| POST | `/forgot` | P | Body `email`：申请重置密码邮件（防枚举，统一成功文案） |
+| GET | `/reset` | P | Query `token`：重置密码 HTML 表单 |
+| POST | `/reset` | P | Body `token,password`：提交新密码 |
+| POST | `/force-verify` | Admin | Body `uid`：强制标记邮箱已验证 |
+| POST | `/send-reset-password` | Admin | Body `uid`：向指定用户发送重置密码邮件 |
 | GET | `/avatar` | P | Query `email` → 头像字段 |
 | GET | `/detail` | Cond | Query `hash`：按二维码 hash 查（历史兼容） |
 | POST | `/list` | A | Body `pageNo,pageSize`；管理员看全部，否则仅自己 |
-| POST | `/add` | P | 创建用户（含 `group_id`）；**当前无鉴权** |
+| POST | `/add` | P | 创建用户（含 `group_id`）；管理员添加视为已验证；**当前无鉴权** |
 | PUT | `/set-profile` | A | `nickname,phone,avatar,city,geolocation`（演示账号受限） |
 | PUT | `/modify` | A | 改资料；本人或管理员 |
 | DELETE | `/delete` | Admin | Body `uid` |
@@ -91,6 +98,8 @@
 | DELETE | `/destroy-account` | A | 注销并清理关联数据 |
 
 **注册 / 登录常用字段：** `email`, `password`, `username`, `nickname`, `invitationCode`, …
+
+**邮件相关环境变量：** `APP_PUBLIC_URL`、`ALIYUN_DM_ACCESS_KEY_ID`、`ALIYUN_DM_ACCESS_KEY_SECRET`、`ALIYUN_DM_ACCOUNT_NAME`（未配置时邮件走 stub 日志）
 
 ---
 

@@ -1,79 +1,52 @@
 <template>
-    <div class="container">
-        <ElRow>
-            <ElCol :span="10" :offset="(24 - 10)/2">
-                <div class="content"
-                     :style="`min-height: ${windowInsets.height}px`"
-                    >
-                    <div class="register-header">
-                        <img src="../assets/logo.png" alt="LOGO">
-                        <h2>注册</h2>
-                    </div>
-                    <ElForm
-                        label-position="top"
-                        :model="formRegister"
-                        :rules="userRules"
-                        ref="registerForm"
-                        label-width="100px">
-                        <ElFormItem label="邮箱" prop="email">
-                            <ElInput autocomplete="off" v-model="formRegister.email"/>
-                        </ElFormItem>
-                        <ElFormItem label="用户名" prop="username">
-                            <ElInput autocomplete="off" v-model="formRegister.username"/>
-                        </ElFormItem>
-                        <ElFormItem label="昵称" prop="nickname">
-                            <ElInput autocomplete="off" v-model="formRegister.nickname"/>
-                        </ElFormItem>
-                        <ElFormItem label="微信" prop="wx">
-                            <ElInput autocomplete="off" v-model="formRegister.wx"/>
-                        </ElFormItem>
-                        <ElFormItem label="手机" prop="phone">
-                            <ElInput autocomplete="off" v-model="formRegister.phone"/>
-                        </ElFormItem>
-                        <ElFormItem label="高德组队码" prop="gaode">
-                            <ElInput autocomplete="off" v-model="formRegister.gaode"/>
-                        </ElFormItem>
-                        <ElFormItem label="主页" prop="homepage">
-                            <ElInput autocomplete="off" v-model="formRegister.homepage"/>
-                        </ElFormItem>
-                        <ElFormItem label="密码" prop="password">
-                            <ElInput autocomplete="off" v-model="formRegister.password"/>
-                        </ElFormItem>
-                        <ElFormItem label="确认密码" prop="passwordrepeat">
-                            <ElInput autocomplete="off" v-model="formRegister.passwordrepeat"/>
-                        </ElFormItem>
-                        <ElFormItem label="邀请码" prop="invitationCode">
-                            <ElInput autocomplete="off" v-model="formRegister.invitationCode"/>
-                        </ElFormItem>
-                    </ElForm>
-                    <div class="submit">
-                        <ElButton style="width: 200px" type="primary" @click="submit">注册</ElButton>
-                    </div>
-                </div>
-            </ElCol>
-        </ElRow>
+    <div class="register-bg" :style="`height:${viewportHeight}px`">
+        <div class="register-panel">
+            <div class="register-title">
+                <h2>注册账号</h2>
+                <p>填写以下信息。注册后请先完成邮箱验证，再登录。</p>
+            </div>
+            <ElForm size="large" :model="formRegister" :rules="userRules" ref="registerForm" label-width="0" @submit.prevent="submit">
+                <ElFormItem prop="invitationCode">
+                    <ElInput clearable autocomplete="off" placeholder="邀请码" v-model="formRegister.invitationCode"/>
+                    <p v-if="!invitationRequired" class="field-hint">还没有用户时可以不填，首位注册者会成为管理员。</p>
+                </ElFormItem>
+                <ElFormItem prop="nickname">
+                    <ElInput clearable autocomplete="off" placeholder="昵称" v-model="formRegister.nickname"/>
+                </ElFormItem>
+                <ElFormItem prop="email">
+                    <ElInput clearable autocomplete="off" placeholder="邮箱" v-model="formRegister.email"/>
+                </ElFormItem>
+                <ElFormItem prop="password">
+                    <ElInput clearable show-password type="password" autocomplete="new-password" placeholder="密码" v-model="formRegister.password"/>
+                </ElFormItem>
+                <ElFormItem prop="passwordrepeat">
+                    <ElInput clearable show-password type="password" autocomplete="new-password" placeholder="再次输入密码"
+                             @keydown.enter="submit" v-model="formRegister.passwordrepeat"/>
+                </ElFormItem>
+                <ElButton class="register-btn" type="primary" native-type="submit" :loading="submitting" @click="submit">注册</ElButton>
+            </ElForm>
+            <div class="register-links">
+                <RouterLink to="/login">已有账号，去登录</RouterLink>
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useProjectStore } from "@/pinia"
 import { useRouter } from 'vue-router'
-import { ElNotification, ElButton, ElForm, ElFormItem, ElInput, ElRow, ElCol } from 'element-plus'
+import { ElNotification, ElButton, ElForm, ElFormItem, ElInput } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import userApi from "@/api/userApi"
+import { request } from "@/api/request"
 
 const projectStore = useProjectStore()
 const router = useRouter()
 
 interface RegisterForm {
     email: string
-    username: string
     nickname: string
-    wx: string
-    phone: string
-    homepage: string
-    gaode: string
     password: string
     passwordrepeat: string
     invitationCode: string
@@ -81,20 +54,28 @@ interface RegisterForm {
 
 const formRegister = ref<RegisterForm>({
     email: '',
-    username: '',
     nickname: '',
-    wx: '',
-    phone: '',
-    homepage: '',
-    gaode: '',
     password: '',
     passwordrepeat: '',
     invitationCode: ''
 })
 
 const registerForm = ref<FormInstance>()
+const submitting = ref(false)
+// 已有用户时邀请码必填，与日记注册一致
+const invitationRequired = ref(true)
 
-function validatePassworDrepeat(rule: any, value: string, callback: Function) {
+onMounted(() => {
+    request('get', null, null, false, '/setup/status')
+        .then((res: any) => {
+            invitationRequired.value = !!res.data?.hasRegisteredUsers
+        })
+        .catch(() => {
+            invitationRequired.value = true
+        })
+})
+
+function validatePasswordRepeat(_rule: unknown, value: string, callback: (err?: Error) => void) {
     if (value !== formRegister.value.password) {
         callback(new Error("两次密码输入不一致"))
     } else {
@@ -102,25 +83,13 @@ function validatePassworDrepeat(rule: any, value: string, callback: Function) {
     }
 }
 
-const userRules = {
+const userRules = computed(() => ({
     email: [
         { required: true, message: '请填写邮箱', trigger: 'blur' },
         {
-            validator: function(rule: any, value: string, callback: Function) {
+            validator: function(_rule: unknown, value: string, callback: (err?: Error) => void) {
                 if (!/(\w|\d)+@(\w|\d)+\.\w+/i.test(value)) {
-                    callback(new Error("用户名只能是小写字母"))
-                } else {
-                    callback()
-                }
-            }
-        }
-    ],
-    username: [
-        { required: true, message: '请填写用户名', trigger: 'blur' },
-        {
-            validator: function(rule: any, value: string, callback: Function) {
-                if (!/^[a-z_]+$/.test(value)) {
-                    callback(new Error("用户名只能是小写字母"))
+                    callback(new Error("邮箱格式不正确"))
                 } else {
                     callback()
                 }
@@ -128,85 +97,117 @@ const userRules = {
         }
     ],
     nickname: { required: true, message: '请填写昵称', trigger: 'blur' },
-    wx: { required: true, message: '请填写微信', trigger: 'blur' },
-    phone: { required: true, message: '请填写手机号', trigger: 'blur' },
-    homepage: '',
-    gaode: '',
-    password: { required: true, message: '请填写原密码', trigger: 'blur' },
+    password: { required: true, message: '请填写密码', trigger: 'blur' },
     passwordrepeat: [
-        { required: true, message: '请再填写一次新密码', trigger: 'blur' },
-        { validator: validatePassworDrepeat, trigger: 'blur' }
+        { required: true, message: '请再填写一次密码', trigger: 'blur' },
+        { validator: validatePasswordRepeat, trigger: 'blur' }
     ],
-    invitationCode: { required: true, message: '请输入邀请码', trigger: 'blur' },
-}
+    invitationCode: invitationRequired.value
+        ? { required: true, message: '请输入邀请码', trigger: 'blur' }
+        : { required: false },
+}))
 
-const windowInsets = computed(() => projectStore.windowInsets)
+// 页面整体按 1920 缩放且 body 不能滚动，注册表单在可视高度内自行滚动
+const viewportHeight = computed(() => {
+    const scale = projectStore.pageScale || 1
+    return projectStore.windowInsets.height / scale
+})
 
 function submit() {
-    if (!registerForm.value) return
+    if (!registerForm.value || submitting.value) return
     registerForm.value.validate((valid) => {
-        if (valid) {
-            register()
-        } else {
-            console.log('error submit!!')
-            return false
-        }
-    })
-}
-
-function register() {
-    userApi.register(formRegister.value)
-        .then(res => {
-            ElNotification({
-                title: res.message,
-                message: '请登录',
-                position: 'top-right',
-                type: 'success',
-                onClose() {
-                }
-            })
-            router.push('/login')
+        if (!valid) return
+        submitting.value = true
+        userApi.register({
+            nickname: formRegister.value.nickname.trim(),
+            email: formRegister.value.email.trim(),
+            password: formRegister.value.password,
+            invitationCode: formRegister.value.invitationCode.trim(),
         })
+            .then((res: any) => {
+                const needVerify = res.data && res.data.email_verified === false
+                ElNotification({
+                    title: res.message || '注册成功',
+                    message: needVerify ? '请查收邮箱完成验证后再登录' : '请登录',
+                    position: 'top-right',
+                    type: 'success',
+                })
+                router.push('/login')
+            })
+            .catch(() => {})
+            .finally(() => {
+                submitting.value = false
+            })
+    })
 }
 </script>
 
 <style lang="scss" scoped>
-@use "../assets/scss/variables" as *;
-@use "../assets/scss/utility" as *;
-@use "sass:color";
 
-$height: 60px;
-
-.container {
-    background-color: $color-border;
-}
-
-.content {
-    padding: 60px;
-    background-color: white;
-    @include box-shadow(1px 2px 5px color.adjust(black, $alpha: -0.9))
-}
-
-.register-header {
-    margin-bottom: 30px;
+.register-bg {
     display: flex;
     justify-content: center;
+    align-items: center;
+    overflow-y: auto;
+    background: #eef1f4;
+}
 
-    img {
-        padding: 5px;
-        margin-right: 20px;
-        display: block;
-        height: $height;
-    }
+.register-panel {
+    z-index: 10;
+    width: 420px;
+    margin: 40px 0;
+    padding: 40px 40px 28px;
+    border: 1px solid #e6e8eb;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 12px 40px rgba(20, 24, 28, 0.08);
+}
+
+.register-title {
+    text-align: left;
+    margin-bottom: 28px;
 
     h2 {
-        color: $text-main;
-        line-height: $height;
+        margin: 0;
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        color: #1a1d21;
+    }
+
+    p {
+        margin: 8px 0 0;
+        font-size: 13px;
+        line-height: 1.6;
+        color: #6b7280;
     }
 }
 
-.submit {
-    display: flex;
-    justify-content: center;
+.field-hint {
+    margin: 6px 2px 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #6b7280;
+}
+
+.register-btn {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+}
+
+.register-links {
+    margin-top: 18px;
+    text-align: center;
+
+    a {
+        color: #4b5563;
+        font-size: 13px;
+        text-decoration: none;
+    }
+
+    a:hover {
+        color: #1a1d21;
+    }
 }
 </style>

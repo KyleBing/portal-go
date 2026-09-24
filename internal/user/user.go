@@ -35,6 +35,14 @@ func Register(r *gin.RouterGroup) {
 	g.POST("/login", handleLogin)
 	g.PUT("/change-password", handleChangePassword)
 	g.DELETE("/destroy-account", handleDestroyAccount)
+	// 邮箱验证与找回密码
+	g.GET("/verify", handleVerify)
+	g.POST("/resend-verify", handleResendVerify)
+	g.POST("/forgot", handleForgot)
+	g.GET("/reset", handleReset)
+	g.POST("/reset", handleReset)
+	g.POST("/force-verify", handleForceVerify)
+	g.POST("/send-reset-password", handleAdminSendReset)
 }
 
 func handleRegister(c *gin.Context) {
@@ -89,7 +97,7 @@ func checkEmailOrUsernameExist(diary *sql.DB, email, username string) ([]map[str
 }
 
 func registerUser(c *gin.Context, diary *sql.DB, body map[string]interface{}) {
-	email := apihelper.S(body, "email")
+	email := strings.TrimSpace(strings.ToLower(apihelper.S(body, "email")))
 	username := apihelper.S(body, "username")
 	exist, err := checkEmailOrUsernameExist(diary, email, username)
 	if err != nil {
@@ -118,20 +126,30 @@ func registerUser(c *gin.Context, diary *sql.DB, body map[string]interface{}) {
 		return
 	}
 	now := util.NowString()
-	_, err = diary.Exec(`insert into `+table+`(email, nickname, username, password, register_time, last_visit_time, comment, wx, phone, homepage, gaode, group_id)
+	// 首个用户（管理员）直接视为已验证，便于安装引导；其余用户需邮件验证
+	var verifiedAt interface{}
+	if isFirstUser {
+		verifiedAt = now
+	} else {
+		verifiedAt = nil
+	}
+	res, err := diary.Exec(`insert into `+table+`(email, nickname, username, password, email_verified_at, register_time, last_visit_time, comment, wx, phone, homepage, group_id)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
-		email, apihelper.S(body, "nickname"), apihelper.S(body, "username"), string(hash), now, now,
+		email, apihelper.S(body, "nickname"), apihelper.S(body, "username"), string(hash), verifiedAt, now, now,
 		apihelper.S(body, "comment"), apihelper.S(body, "wx"), apihelper.S(body, "phone"),
-		apihelper.S(body, "homepage"), apihelper.S(body, "gaode"), groupID)
+		apihelper.S(body, "homepage"), groupID)
 	if err != nil {
 		response.Error(c, "", "注册失败")
 		return
 	}
 
+	uid, _ := res.LastInsertId()
+	if uid == 0 {
+		_ = diary.QueryRow(`select uid from `+table+` where email=?`, email).Scan(&uid)
+	}
+
 	invitationCode := apihelper.S(body, "invitationCode")
 	if invitationCode != "" {
-		var uid int64
-		_ = diary.QueryRow(`select uid from `+table+` where email=?`, email).Scan(&uid)
 		_, ierr := diary.Exec(`update invitations set binding_uid = ?, date_register = ? where id = ?`, uid, now, invitationCode)
 		if ierr != nil {
 			msg := "注册成功，邀请码信息更新失败"
@@ -142,11 +160,16 @@ func registerUser(c *gin.Context, diary *sql.DB, body map[string]interface{}) {
 			return
 		}
 	}
-	msg := "注册成功"
-	if isFirstUser {
-		msg = "注册成功！您已成为系统管理员。"
+
+	if !isFirstUser {
+		if err := issueVerifyToken(diary, uid, email); err != nil {
+			response.Error(c, err.Error(), "注册成功，但验证邮件发送失败，请稍后重试发送")
+			return
+		}
+		response.Success(c, gin.H{"email_verified": false, "uid": uid}, "注册成功，请查收邮箱完成验证后再登录")
+		return
 	}
-	response.Success(c, "", msg)
+	response.Success(c, gin.H{"email_verified": true, "uid": uid}, "注册成功！您已成为系统管理员。")
 }
 
 func handleList(c *gin.Context) {
@@ -266,11 +289,12 @@ func handleAdd(c *gin.Context) {
 		return
 	}
 	now := util.NowString()
-	_, err = diary.Exec(`insert into `+table+`(email, nickname, username, password, register_time, last_visit_time, comment, wx, phone, homepage, gaode, group_id)
+	// 管理员直接添加的用户视为已验证
+	_, err = diary.Exec(`insert into `+table+`(email, nickname, username, password, email_verified_at, register_time, last_visit_time, comment, wx, phone, homepage, group_id)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
-		apihelper.S(body, "email"), apihelper.S(body, "nickname"), apihelper.S(body, "username"), string(hash), now, now,
+		apihelper.S(body, "email"), apihelper.S(body, "nickname"), apihelper.S(body, "username"), string(hash), now, now, now,
 		apihelper.S(body, "comment"), apihelper.S(body, "wx"), apihelper.S(body, "phone"),
-		apihelper.S(body, "homepage"), apihelper.S(body, "gaode"), apihelper.S(body, "group_id"))
+		apihelper.S(body, "homepage"), apihelper.S(body, "group_id"))
 	if err != nil {
 		response.Error(c, err.Error(), "用户添加失败")
 		return
@@ -323,10 +347,10 @@ func handleModify(c *gin.Context) {
 		response.Error(c, err.Error(), "修改失败")
 		return
 	}
-	_, err = diary.Exec(`update `+table+` set email=?, nickname=?, username=?, comment=?, wx=?, phone=?, homepage=?, gaode=?, group_id=? WHERE uid=?`,
+	_, err = diary.Exec(`update `+table+` set email=?, nickname=?, username=?, comment=?, wx=?, phone=?, homepage=?, group_id=? WHERE uid=?`,
 		apihelper.S(body, "email"), apihelper.S(body, "nickname"), apihelper.S(body, "username"),
 		apihelper.S(body, "comment"), apihelper.S(body, "wx"), apihelper.S(body, "phone"),
-		apihelper.S(body, "homepage"), apihelper.S(body, "gaode"), apihelper.S(body, "group_id"), apihelper.S(body, "uid"))
+		apihelper.S(body, "homepage"), apihelper.S(body, "group_id"), apihelper.S(body, "uid"))
 	if err != nil {
 		response.Error(c, err.Error(), "修改失败")
 		return
@@ -361,7 +385,8 @@ func handleLogin(c *gin.Context) {
 		return
 	}
 	body := apihelper.Body(c)
-	data, err := apihelper.QueryMap(diary, `select * from `+table+` where email = ?`, apihelper.S(body, "email"))
+	email := strings.TrimSpace(strings.ToLower(apihelper.S(body, "email")))
+	data, err := apihelper.QueryMap(diary, `select * from `+table+` where email = ?`, email)
 	if err != nil {
 		response.Error(c, "", err.Error())
 		return
@@ -372,6 +397,10 @@ func handleLogin(c *gin.Context) {
 	}
 	if bcrypt.CompareHashAndPassword([]byte(apihelper.MapStr(data, "password")), []byte(apihelper.S(body, "password"))) != nil {
 		response.Error(c, "", "用户名或密码错误")
+		return
+	}
+	if !emailVerifiedFromRow(data) {
+		response.Error(c, gin.H{"code": "email_not_verified", "email": email}, "邮箱尚未验证，请查收验证邮件后再登录")
 		return
 	}
 	uid := apihelper.MapInt(data, "uid")
@@ -386,6 +415,7 @@ func handleLogin(c *gin.Context) {
 	}
 	delete(data, "password")
 	data["token"] = token
+	data["email_verified"] = true
 	util.UpdateUserLastLoginTime(uid)
 	response.Success(c, data, "登录成功")
 }
@@ -444,6 +474,7 @@ func handleDestroyAccount(c *gin.Context) {
 		`delete from map_pointer where uid = ?`,
 		`delete from map_route where uid = ?`,
 		`delete from qrs where uid = ?`,
+		`delete from email_tokens where uid = ?`,
 		`delete from ` + table + ` where uid = ?`,
 	}
 	for _, s := range stmts {

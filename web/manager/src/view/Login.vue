@@ -19,7 +19,23 @@
                     <ElButton :loading="isInLoginProcess" class="login-btn" type="primary" @click="submit(formEl)"> 登录
                     </ElButton>
                 </ElFormItem>
+                <ElFormItem v-if="needResendVerify" align="center">
+                    <ElButton class="login-btn" @click="resendVerify">重发验证邮件</ElButton>
+                </ElFormItem>
+                <div class="login-links">
+                    <RouterLink to="/register">注册</RouterLink>
+                    <a href="javascript:;" @click="showForgot = true">找回密码</a>
+                </div>
             </ElForm>
+
+            <ElDialog v-model="showForgot" title="找回密码" width="400px" append-to-body>
+                <p class="forgot-tip">输入注册邮箱，将发送重置密码链接（1 小时内有效）。</p>
+                <ElInput v-model="forgotEmail" placeholder="邮箱" clearable />
+                <template #footer>
+                    <ElButton @click="showForgot = false">取消</ElButton>
+                    <ElButton type="primary" :loading="forgotSending" @click="sendForgot">发送重置邮件</ElButton>
+                </template>
+            </ElDialog>
 
         </div>
     </div>
@@ -28,7 +44,7 @@
 <script setup lang="ts">
 import {ref, onMounted, onUnmounted, nextTick} from "vue";
 import {useProjectStore} from "../pinia";
-import { FormInstance, ElNotification } from "element-plus";
+import { FormInstance, ElNotification, ElDialog, ElMessage } from "element-plus";
 import userApi from "../api/userApi.ts";
 const projectStore = useProjectStore()
 import { useRouter } from "vue-router";
@@ -44,10 +60,17 @@ const formLogin = ref<{ email: string, password: string }>({
     password: ''
 });
 
+const needResendVerify = ref(false)
+const showForgot = ref(false)
+const forgotEmail = ref('')
+const forgotSending = ref(false)
+
 let animatedBg = null
 
 onMounted(function() {
-    animatedBg = new AnimateHeartCanvas(0,360,300,100,10, '#3d3d3d')
+    animatedBg = new AnimateHeartCanvas(0,200,200,50,10, '#3d3d3d')
+    // constructor(hMin, hMax, countHeart = 150, sizeMin = 50, sizeMax = 350, bgColor) {
+
 })
 
 onUnmounted(function() {
@@ -83,6 +106,7 @@ function submit(formEl: FormInstance | undefined) {
 
 function login() {
     isInLoginProcess.value = true
+    needResendVerify.value = false
     userApi
         .login({
             email: formLogin.value.email,
@@ -119,6 +143,35 @@ function login() {
         .catch(function(err) {
             console.log(err)
             isInLoginProcess.value = false
+            if (err?.data?.code === 'email_not_verified') {
+                needResendVerify.value = true
+            }
+        })
+}
+
+function resendVerify() {
+    const email = formLogin.value.email.trim()
+    if (!email) return
+    userApi.resendVerify({ email })
+        .then((res: any) => {
+            ElMessage.success(res.message || '若该邮箱已注册且未验证，验证邮件已发送')
+        })
+}
+
+function sendForgot() {
+    const email = (forgotEmail.value || formLogin.value.email).trim()
+    if (!email) {
+        ElMessage.warning('请填写邮箱')
+        return
+    }
+    forgotSending.value = true
+    userApi.forgot({ email })
+        .then((res: any) => {
+            ElMessage.success(res.message || '若该邮箱已注册，重置邮件已发送')
+            showForgot.value = false
+        })
+        .finally(() => {
+            forgotSending.value = false
         })
 }
 </script>
@@ -189,5 +242,23 @@ function login() {
         text-decoration-color: white;
         color: white;
     }
+}
+
+.login-links {
+    text-align: center;
+    margin-top: 8px;
+    a {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 13px;
+        text-decoration: underline;
+        margin: 0 10px;
+    }
+}
+
+.forgot-tip {
+    margin: 0 0 12px;
+    color: #606266;
+    font-size: 13px;
+    line-height: 1.5;
 }
 </style>

@@ -36,7 +36,7 @@ func handleFront(c *gin.Context) {
 	row, err := db.QueryMap(diary, `
 		select qrs.hash, qrs.is_public, qrs.is_show_phone, qrs.message, qrs.car_name, qrs.car_plate,
 		       qrs.car_desc, qrs.is_show_car, qrs.is_show_wx, qrs.wx_code_img, qrs.description,
-		       qrs.is_show_homepage, qrs.is_show_gaode, qrs.date_init, qrs.visit_count, qrs.imgs, qrs.car_type,
+		       qrs.is_show_homepage, qrs.date_init, qrs.visit_count, qrs.imgs, qrs.car_type,
 		       users.phone, users.wx, users.homepage, users.uid, users.nickname, users.username
 		from qrs left join users on qrs.uid = users.uid
 		where qrs.hash = ? and is_public = 1`, hash)
@@ -69,7 +69,7 @@ func handleList(c *gin.Context) {
 	}
 	base := `select qrs.hash, qrs.is_public, qrs.is_show_phone, qrs.message, qrs.car_name, qrs.car_plate,
 		qrs.car_desc, qrs.is_show_car, qrs.is_show_wx, qrs.wx_code_img, qrs.description,
-		qrs.is_show_homepage, qrs.is_show_gaode, qrs.date_init, qrs.visit_count, qrs.imgs, qrs.car_type,
+		qrs.is_show_homepage, qrs.date_init, qrs.visit_count, qrs.imgs, qrs.car_type,
 		users.phone, users.wx, users.uid, users.nickname, users.username
 		from qrs left join users on qrs.uid = users.uid`
 
@@ -152,7 +152,6 @@ type qrBody struct {
 	WxCodeImg      string `json:"wx_code_img"`
 	IsShowWx       int    `json:"is_show_wx"`
 	IsShowHomepage int    `json:"is_show_homepage"`
-	IsShowGaode    int    `json:"is_show_gaode"`
 	VisitCount     int    `json:"visit_count"`
 	UID            int64  `json:"uid"`
 	Imgs           string `json:"imgs"`
@@ -175,11 +174,11 @@ func handleAdd(c *gin.Context) {
 		return
 	}
 	now := util.NowString()
-	_, err := diary.Exec(`insert into `+currentTable+`(hash, is_public, is_show_phone, message, description, car_name, car_plate, car_desc, is_show_car, wx_code_img, is_show_wx, is_show_homepage, is_show_gaode, date_modify, date_init, visit_count, uid, imgs, car_type)
-		values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+	_, err := diary.Exec(`insert into `+currentTable+`(hash, is_public, is_show_phone, message, description, car_name, car_plate, car_desc, is_show_car, wx_code_img, is_show_wx, is_show_homepage, date_modify, date_init, visit_count, uid, imgs, car_type)
+		values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		hash, body.IsPublic, body.IsShowPhone, util.UnicodeEncode(body.Message), util.UnicodeEncode(body.Description),
 		body.CarName, body.CarPlate, body.CarDesc, body.IsShowCar, body.WxCodeImg, body.IsShowWx,
-		body.IsShowHomepage, body.IsShowGaode, now, now, body.VisitCount, user.UID, body.Imgs, body.CarType)
+		body.IsShowHomepage, now, now, body.VisitCount, user.UID, body.Imgs, body.CarType)
 	if err != nil {
 		response.Error(c, err.Error(), "二维码添加失败")
 		return
@@ -198,10 +197,10 @@ func handleModify(c *gin.Context) {
 	_ = c.ShouldBindJSON(&body)
 	now := util.NowString()
 	diary, _ := db.Open(dbName)
-	_, err := diary.Exec(`update `+currentTable+` set is_public=?, is_show_phone=?, message=?, description=?, car_name=?, car_plate=?, car_desc=?, is_show_car=?, is_show_wx=?, wx_code_img=?, is_show_homepage=?, is_show_gaode=?, date_modify=?, visit_count=?, uid=?, imgs=?, car_type=? WHERE hash=?`,
+	_, err := diary.Exec(`update `+currentTable+` set is_public=?, is_show_phone=?, message=?, description=?, car_name=?, car_plate=?, car_desc=?, is_show_car=?, is_show_wx=?, wx_code_img=?, is_show_homepage=?, date_modify=?, visit_count=?, uid=?, imgs=?, car_type=? WHERE hash=?`,
 		body.IsPublic, body.IsShowPhone, util.UnicodeEncode(body.Message), util.UnicodeEncode(body.Description),
 		body.CarName, body.CarPlate, body.CarDesc, body.IsShowCar, body.IsShowWx, body.WxCodeImg,
-		body.IsShowHomepage, body.IsShowGaode, now, body.VisitCount, body.UID, body.Imgs, body.CarType, body.Hash)
+		body.IsShowHomepage, now, body.VisitCount, body.UID, body.Imgs, body.CarType, body.Hash)
 	if err != nil {
 		response.Error(c, err.Error(), "二维码修改失败")
 		return

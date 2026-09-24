@@ -58,7 +58,7 @@ func VerifyAuthorization(c *gin.Context) (*models.User, string) {
 	if err != nil {
 		return nil, "mysql: 获取身份信息错误"
 	}
-	user, err := ScanUser(diary.QueryRow(`SELECT uid,email,nickname,username,password,register_time,last_visit_time,comment,wx,phone,homepage,gaode,group_id,count_diary,count_dict,count_qr,count_words,count_map_route,count_map_pointer,sync_count,avatar,city,geolocation FROM users WHERE uid = ?`, claims.UID))
+	user, err := ScanUser(diary.QueryRow(`SELECT uid,email,nickname,username,password,email_verified_at,register_time,last_visit_time,comment,wx,phone,homepage,group_id,count_diary,count_dict,count_qr,count_words,count_map_route,count_map_pointer,sync_count,avatar,city,geolocation FROM users WHERE uid = ?`, claims.UID))
 	if err == sql.ErrNoRows {
 		return nil, "身份验证失败：查无此人"
 	}
@@ -78,16 +78,21 @@ func ScanUser(row interface {
 	Scan(dest ...any) error
 }) (*models.User, error) {
 	u := &models.User{}
-	var reg, last, comment, wx, phone, homepage, gaode, avatar, city, geo sql.NullString
+	var reg, last, comment, wx, phone, homepage, avatar, city, geo sql.NullString
+	var emailVerified sql.NullTime
 	var countMapPtr sql.NullInt64
 	err := row.Scan(
 		&u.UID, &u.Email, &u.Nickname, &u.Username, &u.Password,
-		&reg, &last, &comment, &wx, &phone, &homepage, &gaode, &u.GroupID,
+		&emailVerified, &reg, &last, &comment, &wx, &phone, &homepage, &u.GroupID,
 		&u.CountDiary, &u.CountDict, &u.CountQR, &u.CountWords, &u.CountMapRoute,
 		&countMapPtr, &u.SyncCount, &avatar, &city, &geo,
 	)
 	if err != nil {
 		return nil, err
+	}
+	if emailVerified.Valid {
+		s := emailVerified.Time.Format("2006-01-02 15:04:05")
+		u.EmailVerifiedAt = &s
 	}
 	if reg.Valid {
 		u.RegisterTime = &reg.String
@@ -106,9 +111,6 @@ func ScanUser(row interface {
 	}
 	if homepage.Valid {
 		u.Homepage = &homepage.String
-	}
-	if gaode.Valid {
-		u.Gaode = &gaode.String
 	}
 	if countMapPtr.Valid {
 		v := int(countMapPtr.Int64)
