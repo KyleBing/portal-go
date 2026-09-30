@@ -27,7 +27,7 @@ func MigratePlaintext() error {
 	if err := rewriteColumn(wubi, wordTable, "id", "word"); err != nil {
 		return err
 	}
-	return nil
+	return ensureDictRevisionSchema(wubi)
 }
 
 func ensureUTF8MB4(sqlDB *sql.DB, table string) error {

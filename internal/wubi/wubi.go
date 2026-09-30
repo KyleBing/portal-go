@@ -1,8 +1,12 @@
 package wubi
 
 import (
+	"crypto/sha256"
+	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/KyleBing/portal-go/internal/db"
 	"github.com/KyleBing/portal-go/internal/middleware"
@@ -19,11 +23,49 @@ const dbDiary = db.Diary
 const dictTable = "wubi_dict"
 
 func RegisterDict(r *gin.RouterGroup) {
+	r.GET("/meta", dictMeta)
 	r.GET("/pull", dictPull)
 	r.PUT("/push", dictPush)
 	// 兼容部分客户端 GET + 尾斜杠重试；正式约定仍为 POST JSON
 	r.GET("/check-backup-exist", dictCheckBackupExist)
 	r.POST("/check-backup-exist", dictCheckBackupExist)
+}
+
+// 只返回版本和摘要，不带正文。revision 与本地记下的一致且本地没改时，客户端不必再拉全文。
+func dictMeta(c *gin.Context) {
+	user, msg := middleware.VerifyAuthorization(c)
+	if msg != "" {
+		response.Error(c, "", msg)
+		return
+	}
+	wubi, _ := db.Open(dbWubi)
+	if err := ensureDictRevisionSchema(wubi); err != nil {
+		response.Error(c, err.Error(), "")
+		return
+	}
+	title := strings.TrimSpace(c.Query("title"))
+	row, err := db.QueryMap(wubi, `select id, title, content_size, word_count, date_update, revision, content_hash from `+dictTable+` where title = ? and uid=?`, title, user.UID)
+	if err != nil {
+		response.Error(c, err.Error(), "")
+		return
+	}
+	if row == nil {
+		response.Success(c, nil, "不存在词库")
+		return
+	}
+	rev, hash, err := ensureRowRevision(wubi, row)
+	if err != nil {
+		response.Error(c, err.Error(), "")
+		return
+	}
+	response.Success(c, gin.H{
+		"title":        PlainText(asString(row["title"])),
+		"revision":     rev,
+		"content_hash": hash,
+		"word_count":   asInt64(row["word_count"]),
+		"content_size": asInt64(row["content_size"]),
+		"date_update":  asString(row["date_update"]),
+	}, "")
 }
 
 func dictPull(c *gin.Context) {
@@ -33,6 +75,10 @@ func dictPull(c *gin.Context) {
 		return
 	}
 	wubi, _ := db.Open(dbWubi)
+	if err := ensureDictRevisionSchema(wubi); err != nil {
+		response.Error(c, err.Error(), "")
+		return
+	}
 	rows, err := db.QueryMaps(wubi, `select * from `+dictTable+` where title = ? and uid=?`, c.Query("title"), user.UID)
 	if err != nil {
 		response.Error(c, err.Error(), "")
@@ -43,8 +89,15 @@ func dictPull(c *gin.Context) {
 		return
 	}
 	row := rows[0]
+	rev, hash, err := ensureRowRevision(wubi, row)
+	if err != nil {
+		response.Error(c, err.Error(), "")
+		return
+	}
 	row["title"] = PlainText(asString(row["title"]))
 	row["content"] = PlainText(asString(row["content"]))
+	row["revision"] = rev
+	row["content_hash"] = hash
 	util.UpdateUserLastLoginTime(user.UID)
 	response.Success(c, row, "")
 }
@@ -56,42 +109,65 @@ func dictPush(c *gin.Context) {
 		return
 	}
 	var body struct {
-		Title       string `json:"title"`
-		Content     string `json:"content"`
-		ContentSize int    `json:"contentSize"`
-		WordCount   int    `json:"wordCount"`
+		Title        string `json:"title"`
+		Content      string `json:"content"`
+		ContentSize  int    `json:"contentSize"`
+		WordCount    int    `json:"wordCount"`
+		BaseRevision *int64 `json:"baseRevision"`
 	}
 	_ = c.ShouldBindJSON(&body)
 	now := util.NowString()
 	// 标题、正文按原文入库；客户端若仍上传 base64，这里先还原
 	title := PlainText(body.Title)
 	content := PlainText(body.Content)
+	hash := contentHash(content)
 	wubi, _ := db.Open(dbWubi)
-	exist, _ := db.QueryMaps(wubi, `select * from `+dictTable+` where title=? and uid=?`, title, user.UID)
+	if err := ensureDictRevisionSchema(wubi); err != nil {
+		response.Error(c, err.Error(), "上传失败")
+		return
+	}
+	exist, _ := db.QueryMaps(wubi, `select id, content, revision, content_hash from `+dictTable+` where title=? and uid=?`, title, user.UID)
 	if len(exist) > 0 {
-		_, err := wubi.Exec(`update `+dictTable+` set title=?, content=?, content_size=?, word_count=?, date_update=? WHERE title=? and uid=?`,
-			title, content, len(content), body.WordCount, now, title, user.UID)
+		row := exist[0]
+		rev, _, err := ensureRowRevision(wubi, row)
 		if err != nil {
 			response.Error(c, err.Error(), "上传失败")
+			return
+		}
+		// 没带 baseRevision 的旧客户端仍整份覆盖。带了就必须对上当前版本。
+		if body.BaseRevision != nil && *body.BaseRevision != rev {
+			response.Error(c, gin.H{"conflict": true, "revision": rev}, "版本已变化")
+			return
+		}
+		next := rev + 1
+		res, err := wubi.Exec(`update `+dictTable+` set title=?, content=?, content_size=?, word_count=?, date_update=?, revision=?, content_hash=? WHERE title=? and uid=? AND revision=?`,
+			title, content, len(content), body.WordCount, now, next, hash, title, user.UID, rev)
+		if err != nil {
+			response.Error(c, err.Error(), "上传失败")
+			return
+		}
+		if n, _ := res.RowsAffected(); n == 0 {
+			fresh, _ := db.QueryMap(wubi, `select revision from `+dictTable+` where title=? and uid=?`, title, user.UID)
+			response.Error(c, gin.H{"conflict": true, "revision": asInt64(fresh["revision"])}, "版本已变化")
 			return
 		}
 		if diary, e := db.Open(dbDiary); e == nil {
 			_, _ = diary.Exec(`update users set sync_count=sync_count + 1 WHERE uid=?`, user.UID)
 		}
 		util.UpdateUserLastLoginTime(user.UID)
-		response.Success(c, nil, "上传成功")
+		response.Success(c, gin.H{"revision": next, "content_hash": hash}, "上传成功")
 		return
 	}
-	res, err := wubi.Exec(`INSERT into `+dictTable+`(title, content, content_size, word_count, date_init, date_update, comment, uid)
-		VALUES(?,?,?,?,?,?,'',?)`,
-		title, content, len(content), body.WordCount, now, now, user.UID)
+	res, err := wubi.Exec(`INSERT into `+dictTable+`(title, content, content_size, word_count, date_init, date_update, comment, uid, revision, content_hash)
+		VALUES(?,?,?,?,?,?,'',?,?,?)`,
+		title, content, len(content), body.WordCount, now, now, user.UID, 1, hash)
 	if err != nil {
 		response.Error(c, err.Error(), "上传失败")
 		return
 	}
 	id, _ := res.LastInsertId()
 	util.UpdateUserLastLoginTime(user.UID)
-	response.Success(c, gin.H{"id": id}, "上传成功")
+	response.Success(c, gin.H{"id": id, "revision": int64(1), "content_hash": hash}, "上传成功")
 }
 
 func dictCheckBackupExist(c *gin.Context) {
@@ -616,6 +692,101 @@ func categoryDelete(c *gin.Context) {
 	}
 	util.UpdateUserLastLoginTime(user.UID)
 	response.Success(c, nil, "删除成功")
+}
+
+// ==================== dict revision ====================
+
+var (
+	dictRevisionMu    sync.Mutex
+	dictRevisionReady bool
+)
+
+func ensureDictRevisionSchema(sqlDB *sql.DB) error {
+	dictRevisionMu.Lock()
+	defer dictRevisionMu.Unlock()
+	if dictRevisionReady {
+		return nil
+	}
+	if err := addDictColumn(sqlDB, "revision", "BIGINT NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := addDictColumn(sqlDB, "content_hash", "CHAR(64) NOT NULL DEFAULT ''"); err != nil {
+		return err
+	}
+	dictRevisionReady = true
+	return nil
+}
+
+func addDictColumn(sqlDB *sql.DB, column, ddl string) error {
+	var n int
+	err := sqlDB.QueryRow(`
+		SELECT COUNT(*) FROM information_schema.COLUMNS
+		WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`, dictTable, column).Scan(&n)
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		return nil
+	}
+	_, err = sqlDB.Exec(`ALTER TABLE ` + dictTable + ` ADD COLUMN ` + column + ` ` + ddl)
+	return err
+}
+
+func ensureRowRevision(sqlDB *sql.DB, row map[string]interface{}) (int64, string, error) {
+	rev := asInt64(row["revision"])
+	hash := asString(row["content_hash"])
+	if rev > 0 && hash != "" {
+		return rev, hash, nil
+	}
+	if asString(row["content"]) == "" {
+		full, err := db.QueryMap(sqlDB, `select content from `+dictTable+` where id=?`, asInt64(row["id"]))
+		if err != nil {
+			return 0, "", err
+		}
+		if full != nil {
+			row["content"] = full["content"]
+		}
+	}
+	hash = contentHash(PlainText(asString(row["content"])))
+	if rev <= 0 {
+		rev = 1
+	}
+	id := asInt64(row["id"])
+	_, err := sqlDB.Exec(`update `+dictTable+` set revision=?, content_hash=? where id=? and (revision=0 or content_hash='')`, rev, hash, id)
+	if err != nil {
+		return 0, "", err
+	}
+	row["revision"] = rev
+	row["content_hash"] = hash
+	return rev, hash, nil
+}
+
+func contentHash(content string) string {
+	sum := sha256.Sum256([]byte(content))
+	return hex.EncodeToString(sum[:])
+}
+
+func asInt64(v interface{}) int64 {
+	switch n := v.(type) {
+	case int64:
+		return n
+	case int:
+		return int64(n)
+	case int32:
+		return int64(n)
+	case float64:
+		return int64(n)
+	case string:
+		var i int64
+		fmt.Sscan(n, &i)
+		return i
+	case []byte:
+		var i int64
+		fmt.Sscan(string(n), &i)
+		return i
+	default:
+		return 0
+	}
 }
 
 // ==================== helpers ====================
