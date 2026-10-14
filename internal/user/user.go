@@ -3,6 +3,7 @@ package user
 import (
 	"database/sql"
 	"strings"
+	"time"
 
 	"github.com/KyleBing/portal-go/internal/apihelper"
 	"github.com/KyleBing/portal-go/internal/auth"
@@ -46,6 +47,13 @@ func Register(r *gin.RouterGroup) {
 }
 
 func handleRegister(c *gin.Context) {
+	// 注册限流：同 IP 每小时最多 10 次（含失败），降低刷号成本。
+	ip := c.ClientIP()
+	if !authLimits.Allow("register:"+ip, 10, time.Hour) {
+		response.Error(c, gin.H{"code": "rate_limited"}, "操作过于频繁，请稍后再试")
+		return
+	}
+
 	diary, err := diaryDB()
 	if err != nil {
 		response.Error(c, err.Error(), "数据库请求出错")
@@ -61,6 +69,21 @@ func handleRegister(c *gin.Context) {
 	if userCount == 0 {
 		registerUser(c, diary, body)
 		return
+	}
+
+	// 五笔 iOS/Android：HMAC 凭证通过则可免邀请码（需配置 APP_REGISTER_SECRET）。
+	client := strings.TrimSpace(apihelper.S(body, "client"))
+	if client != "" {
+		email := strings.TrimSpace(strings.ToLower(apihelper.S(body, "email")))
+		sign := apihelper.S(body, "sign")
+		ts := auth.ParseAppRegisterTS(body["ts"])
+		if ok, msg := auth.VerifyAppRegister(client, email, sign, ts); ok {
+			registerUser(c, diary, body)
+			return
+		} else {
+			response.Error(c, gin.H{"code": "app_register_invalid"}, msg)
+			return
+		}
 	}
 
 	cfg, _ := systemconfig.GetAdminSystemConfig()

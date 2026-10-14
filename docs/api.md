@@ -78,7 +78,7 @@
 
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
-| POST | `/register` | P | 注册。已有用户时需邀请码。首个用户为管理员并自动验证邮箱；其余用户需邮件验证后才能登录 |
+| POST | `/register` | P | 注册。已有用户时需邀请码，或 App 端携带有效 HMAC 凭证免邀请。首个用户为管理员并自动验证邮箱；其余用户需邮件验证后才能登录。同 IP 每小时最多 10 次 |
 | POST | `/login` | P | 登录；未验证邮箱返回 `data.code=email_not_verified`；成功时 `data` 含用户信息与 `token` |
 | GET | `/verify` | P | Query `token`：邮件链接验证邮箱（返回 HTML） |
 | POST | `/resend-verify` | P | Body `email`：重发验证邮件 |
@@ -99,7 +99,19 @@
 
 **注册 / 登录常用字段：** `email`, `password`, `username`, `nickname`, `invitationCode`, …
 
+**App 免邀请注册（五笔客户端）：** 需服务端配置 `APP_REGISTER_SECRET`。Body 额外字段：
+
+| 字段 | 说明 |
+|------|------|
+| `client` | `wubi86-ios` 或 `wubi86-android` |
+| `ts` | Unix 秒时间戳（与服务器相差不超过 5 分钟） |
+| `sign` | `hex(HMAC-SHA256(secret, client + "\\n" + email + "\\n" + ts))`，email 小写 |
+
+带 `client` 时走 App 通道校验；失败返回 `data.code=app_register_invalid`，不回退到邀请码。Web 端继续只传 `invitationCode`。
+
 **邮件相关环境变量：** `APP_PUBLIC_URL`、`ALIYUN_DM_ACCESS_KEY_ID`、`ALIYUN_DM_ACCESS_KEY_SECRET`、`ALIYUN_DM_ACCOUNT_NAME`（未配置时邮件走 stub 日志）
+
+**其它环境变量：** `JWT_SECRET`、`APP_REGISTER_SECRET`（App 免邀请注册 HMAC）
 
 ---
 

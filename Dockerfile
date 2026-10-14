@@ -14,9 +14,9 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 COPY --from=frontend /src/dist ./web/manager/dist
-RUN CGO_ENABLED=0 go build -o /out/portal ./cmd/portal \
- && CGO_ENABLED=0 go build -o /out/ws ./cmd/ws \
- && CGO_ENABLED=0 go build -o /out/cron ./cmd/cron
+RUN CGO_ENABLED=0 go build -buildvcs=false -o /out/portal ./cmd/portal \
+ && CGO_ENABLED=0 go build -buildvcs=false -o /out/ws ./cmd/ws \
+ && CGO_ENABLED=0 go build -buildvcs=false -o /out/cron ./cmd/cron
 
 FROM alpine:3.20
 WORKDIR /app

@@ -154,9 +154,10 @@ fi
 
 mkdir -p "${OUT_DIR}"
 status "🔨" "Compiling ${GOOS}/${GOARCH} …"
-CGO_ENABLED=0 GOOS="${GOOS}" GOARCH="${GOARCH}" "${GO}" build -o "${PORTAL_BIN}" ./cmd/portal
-CGO_ENABLED=0 GOOS="${GOOS}" GOARCH="${GOARCH}" "${GO}" build -o "${WS_BIN}" ./cmd/ws
-CGO_ENABLED=0 GOOS="${GOOS}" GOARCH="${GOARCH}" "${GO}" build -o "${CRON_BIN}" ./cmd/cron
+# -buildvcs=false：避免本机 /usr/local/bin/git 架构不匹配导致部署失败
+CGO_ENABLED=0 GOOS="${GOOS}" GOARCH="${GOARCH}" "${GO}" build -buildvcs=false -o "${PORTAL_BIN}" ./cmd/portal
+CGO_ENABLED=0 GOOS="${GOOS}" GOARCH="${GOARCH}" "${GO}" build -buildvcs=false -o "${WS_BIN}" ./cmd/ws
+CGO_ENABLED=0 GOOS="${GOOS}" GOARCH="${GOARCH}" "${GO}" build -buildvcs=false -o "${CRON_BIN}" ./cmd/cron
 ok "✅" "Compile OK"
 row "portal" "$(file_size_human "${PORTAL_BIN}")"
 row "ws" "$(file_size_human "${WS_BIN}")"

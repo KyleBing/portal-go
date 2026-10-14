@@ -4,9 +4,9 @@ frontend:
 	cd web/manager && yarn install && yarn build
 
 backend:
-	go build -o bin/portal ./cmd/portal
-	go build -o bin/ws ./cmd/ws
-	go build -o bin/cron ./cmd/cron
+	go build -buildvcs=false -o bin/portal ./cmd/portal
+	go build -buildvcs=false -o bin/ws ./cmd/ws
+	go build -buildvcs=false -o bin/cron ./cmd/cron
 
 migrate: backend
 	./bin/portal migrate
