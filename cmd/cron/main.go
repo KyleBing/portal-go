@@ -36,15 +36,13 @@ func main() {
 	}
 	_ = rows.Close()
 
-	// Each statement mirrors a line from updateUserInfo.ts. wubi.* references
-	// live in a separate database but are reachable via the fully-qualified name.
+	// Each statement mirrors a line from updateUserInfo.ts.
+	// 五笔码表/词条数量由 portal-wubi-go 自行维护，这里不再跨库统计。
 	statements := []string{
 		`UPDATE users SET count_diary = (SELECT count(*) FROM diaries WHERE uid = ?) WHERE uid = ?`,
 		`UPDATE users SET count_map_route = (SELECT count(*) FROM map_route WHERE uid = ?) WHERE uid = ?`,
 		`UPDATE users SET count_map_pointer = (SELECT count(*) FROM map_pointer WHERE uid = ?) WHERE uid = ?`,
-		`UPDATE users SET count_dict = (SELECT count(*) FROM wubi.wubi_dict WHERE uid = ?) WHERE uid = ?`,
 		`UPDATE users SET count_qr = (SELECT count(*) FROM qrs WHERE uid = ?) WHERE uid = ?`,
-		`UPDATE users SET count_words = (SELECT count(*) FROM wubi.wubi_words WHERE user_init = ? AND category_id != 1) WHERE uid = ?`,
 	}
 
 	failed := false

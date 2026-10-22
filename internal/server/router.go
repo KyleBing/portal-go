@@ -34,7 +34,7 @@ func New() *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	r.MaxMultipartMemory = 50 << 20 // 50 MiB
-	// 避免尾斜杠 301 把 POST 变成 GET（线上 wubi check-backup 曾因此 404）
+	// 避免尾斜杠 301 把 POST 变成 GET
 	r.RedirectTrailingSlash = false
 	r.RedirectFixedPath = false
 	_ = r.SetTrustedProxies([]string{"127.0.0.1", "::1"})

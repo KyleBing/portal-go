@@ -37,9 +37,7 @@
                         <ElTableColumn width="100" align="center" prop="wx" label="微信"/>
 <!--                        <ElTableColumn align="center" width="100" prop="homepage" label="主页"/>-->
                         <ElTableColumn sortable align="right" width="60" prop="count_diary" label="日记"/>
-                        <ElTableColumn sortable align="right" width="60" prop="count_dict" label="码表"/>
                         <ElTableColumn sortable align="right" width="60" prop="count_qr" label="二维码"/>
-                        <ElTableColumn sortable align="right" width="60" prop="count_words" label="词条"/>
                         <ElTableColumn sortable align="right" width="100" prop="sync_count" label="同步次数"/>
                         <ElTableColumn align="center" width="160" prop="register_time" label="注册时间">
                             <template #default="{row}">
@@ -148,9 +146,7 @@ interface User {
     homepage: string
     group_id: number
     count_diary: number
-    count_dict: number
     count_qr: number
-    count_words: number
     sync_count: number
     register_time: string
     last_visit_time: string
@@ -191,9 +187,7 @@ const formUser = ref<User>({
     homepage: '',
     group_id: 2,
     count_diary: 0,
-    count_dict: 0,
     count_qr: 0,
-    count_words: 0,
     sync_count: 0,
     register_time: '',
     last_visit_time: ''
@@ -247,9 +241,7 @@ function clearForm() {
         homepage: '',
         group_id: 2,
         count_diary: 0,
-        count_dict: 0,
         count_qr: 0,
-        count_words: 0,
         sync_count: 0,
         register_time: '',
         last_visit_time: ''

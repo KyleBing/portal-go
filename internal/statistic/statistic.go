@@ -15,7 +15,6 @@ const dbName = db.Diary
 func Register(r *gin.RouterGroup) {
 	r.GET("/", handleOverview)
 	r.GET("/user-data-diary", handleUserDataDiary)
-	r.GET("/user-data-words", handleUserDataWords)
 	r.GET("/category", handleCategory)
 	r.GET("/year", handleYear)
 	// /users 已下线（原 diary 端用户统计）；改用管理员专用 /manager-users
@@ -67,25 +66,6 @@ func handleUserDataDiary(c *gin.Context) {
 	}
 	diary, _ := db.Open(dbName)
 	rows, err := db.QueryMaps(diary, `SELECT nickname, count_diary FROM users where count_diary > 3 order by count_diary desc`)
-	if err != nil {
-		response.Error(c, "", err.Error())
-		return
-	}
-	response.Success(c, rows, "")
-}
-
-func handleUserDataWords(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
-		return
-	}
-	if !user.IsAdmin() {
-		response.Error(c, "", "需要管理员权限")
-		return
-	}
-	diary, _ := db.Open(dbName)
-	rows, err := db.QueryMaps(diary, `SELECT nickname, count_words FROM users where count_words != 0 order by count_words desc`)
 	if err != nil {
 		response.Error(c, "", err.Error())
 		return
@@ -182,9 +162,9 @@ func handleManagerUsers(c *gin.Context) {
 	diary, _ := db.Open(dbName)
 	rows, err := db.QueryMaps(diary, `
 		SELECT uid, last_visit_time, nickname, register_time,
-			count_diary, count_dict, count_map_route, count_words, sync_count
+			count_diary, count_map_route, sync_count
 		FROM users
-		WHERE count_diary >= 1 OR count_dict >= 1 OR count_map_route >= 1 OR sync_count >= 1
+		WHERE count_diary >= 1 OR count_map_route >= 1 OR sync_count >= 1
 		ORDER BY count_diary DESC, sync_count DESC`)
 	if err != nil {
 		response.Error(c, err.Error(), err.Error())
@@ -192,7 +172,6 @@ func handleManagerUsers(c *gin.Context) {
 	}
 
 	diaryUsers := make([]map[string]interface{}, 0)
-	dictUsers := make([]map[string]interface{}, 0)
 	mapRouteUsers := make([]map[string]interface{}, 0)
 	diaryChart := make([]gin.H, 0)
 	for _, row := range rows {
@@ -203,9 +182,6 @@ func handleManagerUsers(c *gin.Context) {
 				"value": asInt(row["count_diary"]),
 			})
 		}
-		if asInt(row["count_dict"]) > 0 {
-			dictUsers = append(dictUsers, row)
-		}
 		if asInt(row["count_map_route"]) > 0 {
 			mapRouteUsers = append(mapRouteUsers, row)
 		}
@@ -214,7 +190,6 @@ func handleManagerUsers(c *gin.Context) {
 	response.Success(c, gin.H{
 		"users":           rows,
 		"diary_users":     diaryUsers,
-		"dict_users":      dictUsers,
 		"map_route_users": mapRouteUsers,
 		"diary_chart":     diaryChart,
 	}, "请求成功")

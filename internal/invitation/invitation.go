@@ -119,7 +119,7 @@ func handleManage(c *gin.Context) {
 			COALESCE(SUM(CASE WHEN binding_uid IS NULL THEN 1 ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN binding_uid IS NOT NULL THEN 1 ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN binding_uid IS NULL AND is_shared = 1 THEN 1 ELSE 0 END), 0)
-		FROM ` + table).Scan(&total, &unused, &used, &sharedUnused)
+		FROM `+table).Scan(&total, &unused, &used, &sharedUnused)
 
 	util.UpdateUserLastLoginTime(user.UID)
 	response.Success(c, gin.H{

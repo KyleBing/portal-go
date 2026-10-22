@@ -32,7 +32,6 @@
 
 - `GET /`、`GET /portal/`：健康检查 `{ status, message, title }`
 - `GET /portal/init/`：返回 HTML
-- 部分五笔空 stub：空 body
 
 ### 尾斜杠
 
@@ -62,7 +61,6 @@
 | [二维码](#二维码-qr) | `/qr-front` `/qr-manager` | 车贴二维码 |
 | [地图路线](#地图路线-map-route) | `/map-route` | 路线 |
 | [地图标点](#地图标点-map-pointer) | `/map-pointer` | 标点 |
-| [五笔](#五笔-wubi) | `/wubi/dict` `/wubi/word` `/wubi/category` | 词库 / 词条 / 分类 |
 | [饥荒](#饥荒-starve-new) | `/starve-new` | `starve_advance` 资料库 |
 | [统计](#统计-statistic) | `/statistic` | 概览与图表数据 |
 | [文件](#文件-file-manager) | `/file-manager` | 本地上传 |
@@ -99,19 +97,9 @@
 
 **注册 / 登录常用字段：** `email`, `password`, `username`, `nickname`, `invitationCode`, …
 
-**App 免邀请注册（五笔客户端）：** 需服务端配置 `APP_REGISTER_SECRET`。Body 额外字段：
-
-| 字段 | 说明 |
-|------|------|
-| `client` | `wubi86-ios` 或 `wubi86-android` |
-| `ts` | Unix 秒时间戳（与服务器相差不超过 5 分钟） |
-| `sign` | `hex(HMAC-SHA256(secret, client + "\\n" + email + "\\n" + ts))`，email 小写 |
-
-带 `client` 时走 App 通道校验；失败返回 `data.code=app_register_invalid`，不回退到邀请码。Web 端继续只传 `invitationCode`。
-
 **邮件相关环境变量：** `APP_PUBLIC_URL`、`ALIYUN_DM_ACCESS_KEY_ID`、`ALIYUN_DM_ACCESS_KEY_SECRET`、`ALIYUN_DM_ACCOUNT_NAME`（未配置时邮件走 stub 日志）
 
-**其它环境变量：** `JWT_SECRET`、`APP_REGISTER_SECRET`（App 免邀请注册 HMAC）
+**其它环境变量：** `JWT_SECRET`
 
 ---
 
@@ -268,42 +256,6 @@
 | POST | `/add` | A | `name,pointers,note,area,thumb_up,is_public` |
 | PUT | `/modify` | A | + `id` |
 | DELETE | `/delete` | A | Body `id` |
-
----
-
-## 五笔 `/wubi`
-
-### 词库备份 `/wubi/dict`
-
-| 方法 | 路径 | 鉴权 | 说明 |
-|------|------|------|------|
-| GET | `/pull` | A | Query `title` |
-| PUT | `/push` | A | `title,content,contentSize,wordCount` |
-| GET/POST | `/check-backup-exist` | A | `fileName`（query 或 JSON） |
-
-### 词条 `/wubi/word`
-
-| 方法 | 路径 | 鉴权 | 说明 |
-|------|------|------|------|
-| POST | `/list` | A | `keyword,dateRange,category_id,approved,pageNo,pageSize` |
-| POST | `/export-extra` | A | 已审核且非默认分类词 |
-| POST | `/check-exist` | A | `word,code` |
-| POST | `/add` | A | `word,code,priority,up,down,comment,category_id` |
-| POST | `/add-batch` | A | `words[],category_id` |
-| PUT | `/modify` | A | `id` + 字段；非管理员仅本人 |
-| DELETE | `/delete` | A | `ids[]` |
-| PUT | `/modify-batch` | A | `ids[]`, 可选 `category_id`,`approved` |
-| POST | `/upload-dict` | — | 已废弃，返回错误 |
-| GET | `/statistic` `/thumbs-up` `/thumbs-down` | — | 空 stub |
-
-### 分类 `/wubi/category`
-
-| 方法 | 路径 | 鉴权 | 说明 |
-|------|------|------|------|
-| GET | `/list` | A | 分类及词数 |
-| POST | `/add` | Admin | `name,sort_id` |
-| PUT | `/modify` | Admin | `id,name,sort_id` |
-| DELETE | `/delete` | Admin | `id` |
 
 ---
 

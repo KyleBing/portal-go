@@ -18,12 +18,12 @@ const tableName = "user_config"
 
 // UserConfig mirrors the Node portal user_config row.
 type UserConfig struct {
-	UID                   int64                  `json:"uid"`
-	Theme                 string                 `json:"theme"`
-	DefaultDiaryCategory  string                 `json:"default_diary_category"`
-	EditorMode            string                 `json:"editor_mode"`
-	ConfigJSON            map[string]interface{} `json:"config_json"`
-	DateModify            *string                `json:"date_modify"`
+	UID                  int64                  `json:"uid"`
+	Theme                string                 `json:"theme"`
+	DefaultDiaryCategory string                 `json:"default_diary_category"`
+	EditorMode           string                 `json:"editor_mode"`
+	ConfigJSON           map[string]interface{} `json:"config_json"`
+	DateModify           *string                `json:"date_modify"`
 }
 
 // Register mounts /user-config routes on both /user-config and /user-config/

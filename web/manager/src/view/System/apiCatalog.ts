@@ -219,7 +219,6 @@ export const API_MODULES: ApiModule[] = [
         endpoints: [
             { method: 'GET', path: '/statistic/', auth: 'A', summary: '概览计数' },
             { method: 'GET', path: '/statistic/user-data-diary', auth: 'Admin', summary: '各用户日记数（>3）' },
-            { method: 'GET', path: '/statistic/user-data-words', auth: 'Admin', summary: '各用户词条数' },
             { method: 'GET', path: '/statistic/category', auth: 'A', summary: '本人分类分布' },
             { method: 'GET', path: '/statistic/year', auth: 'A', summary: '本人年月直方图' },
             { method: 'GET', path: '/statistic/manager-users', auth: 'Admin', summary: 'Manager 用户统计分组 + diary_chart', notes: '原 /statistic/users 已移除' },

@@ -17,8 +17,8 @@ type DatabaseConfig struct {
 }
 
 var (
-	mu     sync.RWMutex
-	cfg    DatabaseConfig
+	mu      sync.RWMutex
+	cfg     DatabaseConfig
 	cfgPath string
 )
 

@@ -71,21 +71,7 @@ func handleRegister(c *gin.Context) {
 		return
 	}
 
-	// 五笔 iOS/Android：HMAC 凭证通过则可免邀请码（需配置 APP_REGISTER_SECRET）。
-	client := strings.TrimSpace(apihelper.S(body, "client"))
-	if client != "" {
-		email := strings.TrimSpace(strings.ToLower(apihelper.S(body, "email")))
-		sign := apihelper.S(body, "sign")
-		ts := auth.ParseAppRegisterTS(body["ts"])
-		if ok, msg := auth.VerifyAppRegister(client, email, sign, ts); ok {
-			registerUser(c, diary, body)
-			return
-		} else {
-			response.Error(c, gin.H{"code": "app_register_invalid"}, msg)
-			return
-		}
-	}
-
+	// 五笔客户端的免邀请注册已迁移到 portal-wubi-go，这里只保留通用/一次性邀请码。
 	cfg, _ := systemconfig.GetAdminSystemConfig()
 	invitationCode := strings.TrimSpace(apihelper.S(body, "invitationCode"))
 	if cfg.InvitationCode != "" && invitationCode == cfg.InvitationCode {
@@ -235,7 +221,7 @@ func handleList(c *gin.Context) {
 	}
 	util.UpdateUserLastLoginTime(user.UID)
 	response.Success(c, gin.H{
-		"list": list,
+		"list":  list,
 		"pager": gin.H{"pageSize": pageSize, "pageNo": pageNo, "total": total},
 	}, "请求成功")
 }

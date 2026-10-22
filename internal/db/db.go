@@ -12,7 +12,6 @@ import (
 
 const (
 	Diary         = "diary"
-	Wubi          = "wubi"
 	Starve        = "starve"
 	StarveAdvance = "starve_advance"
 )

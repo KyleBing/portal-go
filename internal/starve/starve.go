@@ -55,7 +55,7 @@ var infoConfigs = []struct{ path, table string }{
 var writeEntities = []entityWrite{
 	{
 		seg: "log", table: "logs",
-		cols: []string{"date", "detail"},
+		cols:     []string{"date", "detail"},
 		required: []string{"date", "detail"}, reqMsg: "日期和详情不能为空",
 	},
 	{
@@ -71,7 +71,7 @@ var writeEntities = []entityWrite{
 	},
 	{
 		seg: "coder", table: "coders",
-		cols: []string{"usage", "code", "note"},
+		cols:     []string{"usage", "code", "note"},
 		required: []string{"usage", "code"}, reqMsg: "用途和代码不能为空",
 	},
 	{
@@ -92,7 +92,7 @@ var writeEntities = []entityWrite{
 	},
 	{
 		seg: "material", table: "materials",
-		cols: []string{"name", "name_en", "type", "pic", "thumb", "version", "is_active"},
+		cols:     []string{"name", "name_en", "type", "pic", "thumb", "version", "is_active"},
 		required: []string{"name"}, reqMsg: "名称不能为空",
 	},
 	{
@@ -106,12 +106,12 @@ var writeEntities = []entityWrite{
 	},
 	{
 		seg: "plant", table: "plants",
-		cols: []string{"name", "name_en", "pic", "thumb", "version", "is_active"},
+		cols:     []string{"name", "name_en", "pic", "thumb", "version", "is_active"},
 		required: []string{"name"}, reqMsg: "名称不能为空",
 	},
 	{
 		seg: "thing", table: "things",
-		cols: []string{"name", "name_en", "pic", "thumb", "version", "is_active"},
+		cols:     []string{"name", "name_en", "pic", "thumb", "version", "is_active"},
 		required: []string{"name"}, reqMsg: "名称不能为空",
 	},
 }

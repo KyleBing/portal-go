@@ -19,32 +19,6 @@
                     </template>
                 </ElTableColumn>
                 <ElTableColumn prop="count_diary" label="日记" width="70" align="right"/>
-                <ElTableColumn prop="count_dict" label="码表" width="70" align="right"/>
-                <ElTableColumn prop="count_map_route" label="路书" width="70" align="right"/>
-                <ElTableColumn prop="sync_count" label="同步" width="70" align="right"/>
-            </ElTable>
-        </StatisticPanel>
-
-        <StatisticPanel title="五笔码表用户">
-            <ElTable :data="dictUsers" size="small" stripe border empty-text="暂无数据">
-                <ElTableColumn prop="uid" label="ID" width="70" align="right"/>
-                <ElTableColumn prop="nickname" label="用户名" min-width="120">
-                    <template #default="{ row }">
-                        <span :class="visitClass(row.last_visit_time)">{{ row.nickname }}</span>
-                    </template>
-                </ElTableColumn>
-                <ElTableColumn label="最后访问" width="120" align="right">
-                    <template #default="{ row }">
-                        <span :class="['mono', visitClass(row.last_visit_time)]">{{ formatDay(row.last_visit_time) }}</span>
-                    </template>
-                </ElTableColumn>
-                <ElTableColumn label="注册时间" width="120" align="right">
-                    <template #default="{ row }">
-                        <span class="mono">{{ formatDay(row.register_time) }}</span>
-                    </template>
-                </ElTableColumn>
-                <ElTableColumn prop="count_diary" label="日记" width="70" align="right"/>
-                <ElTableColumn prop="count_dict" label="码表" width="70" align="right"/>
                 <ElTableColumn prop="count_map_route" label="路书" width="70" align="right"/>
                 <ElTableColumn prop="sync_count" label="同步" width="70" align="right"/>
             </ElTable>
@@ -69,7 +43,6 @@
                     </template>
                 </ElTableColumn>
                 <ElTableColumn prop="count_diary" label="日记" width="70" align="right"/>
-                <ElTableColumn prop="count_dict" label="码表" width="70" align="right"/>
                 <ElTableColumn prop="count_map_route" label="路书" width="70" align="right"/>
                 <ElTableColumn prop="sync_count" label="同步" width="70" align="right"/>
             </ElTable>
@@ -95,9 +68,7 @@ interface UserStat {
     last_visit_time: string
     register_time: string
     count_diary: number
-    count_dict: number
     count_map_route: number
-    count_words?: number
     sync_count: number
 }
 
@@ -110,7 +81,6 @@ const auth = getAuthorization()
 const isAdmin = computed(() => Number(auth?.group_id) === 1)
 
 const diaryUsers = ref<UserStat[]>([])
-const dictUsers = ref<UserStat[]>([])
 const mapRouteUsers = ref<UserStat[]>([])
 const diaryChart = ref<ChartItem[]>([])
 
@@ -132,7 +102,6 @@ function load() {
     statisticApi.managerUsers().then((res: any) => {
         const data = res?.data || {}
         diaryUsers.value = data.diary_users || []
-        dictUsers.value = data.dict_users || []
         mapRouteUsers.value = data.map_route_users || []
         diaryChart.value = (data.diary_chart || []).map((item: ChartItem) => ({
             name: item.name,
@@ -140,7 +109,6 @@ function load() {
         }))
     }).catch(() => {
         diaryUsers.value = []
-        dictUsers.value = []
         mapRouteUsers.value = []
         diaryChart.value = []
     })

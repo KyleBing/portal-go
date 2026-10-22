@@ -4,7 +4,6 @@
         </Toolbar>
         <Content>
             <div v-if="isAdmin" class="card-charts">
-                <StatisticUserWordCount/>
                 <StatisticUserDiaryCount/>
             </div>
             <div class="card-cards">
@@ -31,7 +30,6 @@ import Container from "@/layout/Container.vue";
 import Toolbar from "@/layout/Toolbar.vue";
 import Content from "@/layout/Content.vue";
 
-const StatisticUserWordCount = defineAsyncComponent(() => import("@/view/Statistics/StatisticUserWordCount.vue"));
 const StatisticUserDiaryCount = defineAsyncComponent(() => import("@/view/Statistics/StatisticUserDiaryCount.vue"));
 const StatisticUsers = defineAsyncComponent(() => import("@/view/Statistics/StatisticUsers.vue"));
 
@@ -68,7 +66,6 @@ const nameMap = ref(new Map<string, NameMapItem>([
     ["count_diary", {userPermission: [1, 2], name: '日记', icon: 'Collection', color: COLORS.orange}],
     ["count_qr", {userPermission: [1, 2], name: '二维码', icon: 'FullScreen', color: COLORS.gray}],
     ["count_user", {userPermission: [1], name: '用户', icon: 'user', color: COLORS.magenta}],
-    ["count_dict", {userPermission: [1, 2], name: '已同步五笔码表', icon: 'tickets', color: COLORS.purple}],
 ]));
 
 function getStatistic() {
