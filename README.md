@@ -2,12 +2,14 @@
 
 Go 重写的 Portal API，并统一托管原 `manager-src` 管理后台。
 
+当前版本 `1.3.0`，变更见 [CHANGELOG.md](CHANGELOG.md)。
+
 ## 功能
 
 - 鉴权：`Authorization: Bearer <jwt>`（登录返回 `data.token`）；响应体 `{success,message,data}`
 - 接口说明：[docs/api.md](docs/api.md)
 - 模块：用户/用户配置/邀请码、日记/账单/银行卡、地图、二维码、文件、七牛、点赞、统计、饥荒 API、安装引导/系统配置
-- 五笔相关接口与管理已拆分到独立服务 `portal-wubi-go`（`/wubi/*`）
+- 五笔相关接口与管理已拆分到独立服务 `portal-wubi-go`（`/wubi/portal/*`，管理后台 `/wubi/manager/`）
 - 管理后台：`/manager/`（Vue3 + Vite + Element Plus）
 - WebSocket 点赞：`cmd/ws` 端口 `9999`
 - 用户计数刷新：`cmd/cron`
