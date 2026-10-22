@@ -13,8 +13,8 @@ import (
 	"github.com/KyleBing/portal-go/internal/imageqiniu"
 	initdb "github.com/KyleBing/portal-go/internal/init"
 	"github.com/KyleBing/portal-go/internal/invitation"
-	"github.com/KyleBing/portal-go/internal/maproute"
 	"github.com/KyleBing/portal-go/internal/mappointer"
+	"github.com/KyleBing/portal-go/internal/maproute"
 	"github.com/KyleBing/portal-go/internal/qr"
 	"github.com/KyleBing/portal-go/internal/setup"
 	"github.com/KyleBing/portal-go/internal/starvenew"
@@ -23,7 +23,6 @@ import (
 	"github.com/KyleBing/portal-go/internal/thumbsup"
 	"github.com/KyleBing/portal-go/internal/user"
 	"github.com/KyleBing/portal-go/internal/userconfig"
-	"github.com/KyleBing/portal-go/internal/wubi"
 	"github.com/gin-gonic/gin"
 )
 
@@ -103,10 +102,6 @@ func registerAll(rg *gin.RouterGroup) {
 	thumbsup.Register(rg.Group("/thumbs-up"))
 	file.Register(rg.Group("/file-manager"))
 	imageqiniu.Register(rg.Group("/image-qiniu"))
-
-	wubi.RegisterDict(rg.Group("/wubi/dict"))
-	wubi.RegisterWord(rg.Group("/wubi/word"))
-	wubi.RegisterCategory(rg.Group("/wubi/category"))
 
 	// 经典 /starve 库已下线，仅保留 starve-new
 	starvenew.Register(rg.Group("/starve-new"))

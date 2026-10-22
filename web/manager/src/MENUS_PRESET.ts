@@ -40,43 +40,6 @@ const MENUS_PRESET: Array<EntityMenu> = [
         ]
     },
     {
-        "name": "五笔",
-        "type": EnumMenuType['目录'],
-        "path": "/wubi",
-        "match_path": "",
-        "component": "",
-        "visible": EnumMenuVisible['可见'],
-        "redirect": "/wubi/category",
-        "icon": "Document",
-        "isNeedAdminPermission": false,
-        "children": [
-            {
-                "name": "五笔类别",
-                "type": EnumMenuType['菜单'],
-                "path": "/wubi/category",
-                "match_path": "",
-                "component": "Wubi/WubiCategory.vue",
-                "visible": EnumMenuVisible['可见'],
-                "redirect": "",
-                "icon": "Folder",
-                "isNeedAdminPermission": true,
-                "children": []
-            },
-            {
-                "name": "五笔词条",
-                "type": EnumMenuType['菜单'],
-                "path": "/wubi/words",
-                "match_path": "",
-                "component": "Wubi/WubiWords.vue",
-                "visible": EnumMenuVisible['可见'],
-                "redirect": "",
-                "icon": "Document",
-                "isNeedAdminPermission": false,
-                "children": []
-            },
-        ]
-    },
-    {
         "name": "二维码",
         "type": EnumMenuType['目录'],
         "path": "/qr",

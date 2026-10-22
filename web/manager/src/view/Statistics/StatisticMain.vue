@@ -69,9 +69,6 @@ const nameMap = ref(new Map<string, NameMapItem>([
     ["count_qr", {userPermission: [1, 2], name: '二维码', icon: 'FullScreen', color: COLORS.gray}],
     ["count_user", {userPermission: [1], name: '用户', icon: 'user', color: COLORS.magenta}],
     ["count_dict", {userPermission: [1, 2], name: '已同步五笔码表', icon: 'tickets', color: COLORS.purple}],
-    ["count_wubi_words", {userPermission: [1], name: '五笔词条总数', icon: 'PieChart', color: COLORS.red}],
-    ["count_wubi_words_unapproved", {userPermission: [1], name: '待审核五笔词条', icon: 'finished', color: COLORS.red}],
-    ["count_wubi_words_unapproved_user", {userPermission: [1, 2], name: '我的待审核词条', icon: 'finished', color: COLORS.red}]
 ]));
 
 function getStatistic() {
