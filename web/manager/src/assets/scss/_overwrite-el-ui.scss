@@ -1,30 +1,119 @@
-// layout
-.el-header{
-  padding: 0!important;
+@use 'plugin' as *;
+
+.el-header,
+.el-footer {
+  padding: 0 !important;
+  background-color: $theme-bg-main !important;
+}
+
+.el-main {
+  padding: 0 !important;
+  background-color: $theme-bg-main !important;
 }
 
 input[type=number] {
-  padding-right: 0!important;
+  padding-right: 0 !important;
 }
 
-/*.el-input__inner{
-  padding: 0 0 0 6px !important;
-}*/
-.el-main{
-  padding: 0 !important;
-}
-
-.el-textarea__inner{
+.el-textarea__inner {
   padding: 10px 13px !important;
 }
 
-
-// DIALOG
-.el-dialog{
-  padding: 30px !important; // 原来的 padding 太小
+.el-dialog {
+  padding: 30px !important;
+  --el-dialog-bg-color: var(--theme-bg-opaque) !important;
+  background-color: var(--el-dialog-bg-color) !important;
 }
 
-.el-dialog.is-fullscreen{
-  background-color: #eee;
+.el-dialog.is-fullscreen {
+  background-color: $theme-bg-main;
 }
 
+.el-dialog__header,
+.el-dialog__body,
+.el-dialog__footer {
+  background-color: var(--el-dialog-bg-color) !important;
+}
+
+.el-dialog__header {
+  color: $theme-text-main;
+}
+
+.el-card {
+  --el-card-bg-color: var(--theme-bg-opaque) !important;
+  background-color: var(--el-card-bg-color) !important;
+}
+
+.el-table {
+  border-color: var(--el-table-border-color) !important;
+  --el-table-current-row-bg-color: var(--theme-bg-active) !important;
+  --el-table-header-bg-color: #{$theme-bg-opaque} !important;
+
+  .el-table__cell {
+    border-color: var(--el-table-border-color) !important;
+  }
+
+  th.el-table__cell {
+    background-color: $theme-bg-opaque !important;
+  }
+
+  &.el-table--border {
+    border-color: var(--el-table-border-color) !important;
+
+    .el-table__cell {
+      border-right-color: var(--el-table-border-color) !important;
+    }
+
+    th.el-table__cell {
+      border-bottom-color: var(--el-table-border-color) !important;
+      background-color: $theme-bg-opaque !important;
+    }
+  }
+}
+
+.el-table-fixed-column--left,
+.el-table-fixed-column--right {
+  background-color: $theme-bg-opaque !important;
+}
+
+td.el-table__cell .cell {
+  line-height: 1.3 !important;
+}
+
+th.el-table__cell .cell {
+  line-height: 1.2 !important;
+  padding: 5px 8px !important;
+}
+
+.el-select__selection {
+  width: 150px;
+}
+
+.el-menu {
+  border-right: none !important;
+}
+
+.el-sub-menu.is-opened .el-menu:after {
+  background-color: $theme-bg-panel;
+}
+
+.el-sub-menu.is-active .el-sub-menu__title {
+  color: $theme-text-main;
+}
+
+.el-sub-menu.is-active .el-menu .el-menu-item {
+  color: $theme-primary;
+}
+
+.el-message-box {
+  background-color: $theme-bg-opaque !important;
+}
+
+.el-popper.is-dark,
+.el-popper.is-dark > .el-popper__arrow:before {
+  background: $theme-bg-opaque !important;
+}
+
+.el-popper.is-dark {
+  color: $theme-text-main !important;
+}

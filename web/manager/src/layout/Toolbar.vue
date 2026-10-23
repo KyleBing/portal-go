@@ -1,10 +1,6 @@
 <template>
-    <div class="tool-bar" :style="`height: ${isShowSearchBar? 80: 40}px`">
-        <div class="breadcrumb">
-            <Breadcrumb v-if="route.path !== '/hotbackup'"/>
-        </div>
-
-        <div class="search-container" v-if="isShowSearchBar">
+    <div v-if="showToolbarActions" :class="['tool-bar', layout]" :style="styleHeight">
+        <div class="search-container">
             <div class="left">
                 <slot name="left"/>
             </div>
@@ -19,63 +15,94 @@
 </template>
 
 <script setup lang="ts">
+import {computed, onBeforeUnmount, useSlots, watch} from 'vue'
+import {useProjectStore} from "@/pinia";
 
-import Breadcrumb from "@/layout/Breadcrumb.vue";
-import {useRoute} from "vue-router";
-const route = useRoute()
+const slots = useSlots()
+const projectStore = useProjectStore()
 
 const props = withDefaults(defineProps<{
     isShowSearchBar?: boolean
+    layout?: 'horizontal' | 'vertical'
+    isHeightFromContent?: boolean
 }>(), {
-    isShowSearchBar: true
+    isShowSearchBar: true,
+    layout: 'vertical',
+    isHeightFromContent: false,
 })
 
+/** 关闭「搜索栏」模式时仍渲染 left/center/right 插槽（如仅操作按钮） */
+const showToolbarActions = computed(() => {
+    return props.isShowSearchBar || !!slots.left || !!slots.center || !!slots.right
+})
+
+const toolbarHeightPx = computed(() => {
+    if (!showToolbarActions.value) return 0
+    if (props.isHeightFromContent) return null
+    return 50
+})
+
+const styleHeight = computed(() => {
+    if (props.isHeightFromContent) return 'height: auto;'
+    return `height: ${toolbarHeightPx.value}px;`
+})
+
+watch(toolbarHeightPx, (height) => {
+    projectStore.contentInsets.heightToolbar = height ?? 0
+}, {immediate: true})
+
+onBeforeUnmount(() => {
+    projectStore.contentInsets.heightToolbar = 0
+})
 </script>
 
-
 <style scoped lang="scss">
-.tool-bar{
+@use '../assets/scss/plugin' as *;
+
+.tool-bar {
     padding: 5px 15px;
+    color: $theme-text-main;
+    background-color: $theme-bg-panel;
+
+    &.horizontal {
+        display: flex;
+        flex-flow: row nowrap;
+        justify-content: space-between;
+        align-items: center;
+    }
 }
 
-.breadcrumb{
-    display: flex;
-    flex-flow: column nowrap;
-    justify-content: center;
-    height: 30px;
-}
-.search-container{
-    //border-bottom: 1px solid $border-color;
+.search-container {
     align-items: center;
     min-height: 40px;
     display: flex;
     flex-flow: row wrap;
+    gap: 10px;
     justify-content: space-between;
-    .left{
+
+    .left,
+    .center,
+    .right {
         display: flex;
         flex-flow: row nowrap;
-        justify-content: flex-start;
         align-items: center;
-        flex-shrink: 0;
     }
-    .center{
-        display: flex;
-        flex-flow: row nowrap;
+
+    .left {
         justify-content: flex-start;
-        align-items: center;
-        flex-grow: 1;
-        flex-shrink: 0;
-    }
-    .right{
-        display: flex;
-        flex-flow: row nowrap;
-        justify-content: flex-start;
-        align-items: center;
         flex-shrink: 0;
     }
 
-    .el-form-item{
-        margin-bottom: 0;
+    .center {
+        justify-content: flex-start;
+        flex-grow: 1;
+        flex-shrink: 0;
+    }
+
+    .right {
+        justify-content: flex-end;
+        flex-shrink: 0;
+        flex-grow: 1;
     }
 }
 </style>

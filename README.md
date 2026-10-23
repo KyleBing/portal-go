@@ -25,6 +25,7 @@ config/configDatabase.json
 migrations/init.sql   # 首次安装
 migrations/001_*.sql  # 增量迁移（嵌入二进制）
 deploy.sh             # 一键构建 + 部署 + migrate
+deploy-manager.sh     # 仅构建并上传 web/manager
 ```
 
 ## 本地运行
@@ -42,7 +43,7 @@ make backend
 管理后台开发：
 
 ```bash
-cd web/manager && yarn && yarn dev   # :4000，代理 /portal -> :3000
+cd web/manager && yarn && yarn dev   # :4000，代理 /portal -> https://kylebing.cn
 ```
 
 ## 生产部署
@@ -54,6 +55,14 @@ cp deploy.env.example deploy.env   # 按需改主机/路径
 ./deploy.sh                        # linux/amd64 + 部署
 ./deploy.sh --no-deploy            # 只编译
 ./deploy.sh --no-frontend          # 不构建 manager
+```
+
+只改了管理后台页面时（无需编译 Go / migrate / 重启）：
+
+```bash
+./deploy-manager.sh                # build + rsync dist
+./deploy-manager.sh --no-deploy      # 只本地 build
+./deploy-manager.sh --no-build       # 只上传已有 dist
 ```
 
 `deploy.sh` 会：

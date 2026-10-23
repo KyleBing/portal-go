@@ -52,10 +52,12 @@ export default defineConfig({
         port: 4000,
         host: "0.0.0.0",
         proxy: {
+            // 开发时走同源 /portal，转发到线上 portal API（无需本机起 portal-go）
+            // 联调本机后端时改为：target: "http://localhost:3000"
             "/portal": {
-                target: "http://kylebing.cn:3000",
+                target: "https://kylebing.cn",
                 changeOrigin: true,
-                rewrite: (path) => path.replace(/^\/portal/, ""),
+                secure: true,
             },
         },
     },

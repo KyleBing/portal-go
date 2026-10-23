@@ -1,56 +1,54 @@
 @use "sass:color";
+@use "plugin" as *;
 @use "reset" as *;
-@use "variables" as *;
 @use "gutter" as *;
 @use "animate" as *;
 @use "overwrite-el-ui" as *;
-@use "utility" as *;
 
+#app {
+  width: 100%;
+  min-height: 100%;
 
-
-
-#app{
-  width: 1920px;
-  left: 50%;
-  top: 0;
-  transform: translate(-50%, 0%) scale(1);
-  -webkit-transform: translate(-50%, 0%);
-  -ms-transform: translate(-50%, 0%);
-  -webkit-transform-origin: top;
-  -ms-transform-origin: top;
-  transform-origin: top;
-  position: absolute;
   &::-webkit-scrollbar {
     display: none;
   }
 }
 
-
-
-body{
-  background-color: $bg-light;
-}
-.link{
+.link {
   color: $color-main;
   text-decoration: underline;
 }
 
+.search-bar {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
 
-.text-approved{
+  .el-form-item {
+    margin-right: 15px !important;
+    margin-bottom: 0;
+  }
+
+  .el-select__selection {
+    width: 100px;
+  }
+}
+
+.text-approved {
   color: $green;
 }
-.text-pending{
+.text-pending {
   color: $orange;
 }
-.text-reject{
+.text-reject {
   color: $red;
 }
 
-.card-statistic{
+.card-statistic {
   margin-right: 30px;
   border: 1px solid color.adjust(black, $alpha: -0.8);
   padding: 20px;
   @include border-radius($radius-pc + 5);
   margin-bottom: 30px;
-  background-color: white;
+  background-color: $theme-bg-opaque;
 }

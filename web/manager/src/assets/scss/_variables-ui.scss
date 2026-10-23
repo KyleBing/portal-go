@@ -1,0 +1,30 @@
+@use 'sass:color';
+@use 'variables' as *;
+
+$ui-color-main: #00deff;
+$ui-color-primary: #409eff;
+$ui-color-blue: #0296ff;
+$ui-color-btn-hover: color.adjust($ui-color-primary, $alpha: -0.7);
+
+$ui-border-color-nav: color.adjust($ui-color-primary, $alpha: -0.8);
+$ui-border-color: color.adjust($ui-color-primary, $alpha: -0.5);
+$ui-border-active: color.adjust($ui-color-primary, $alpha: -0.2);
+$ui-border-card: color.adjust($ui-color-main, $alpha: -0.7);
+
+$ui-bg-panel-header: color.adjust($ui-color-primary, $alpha: -0.6);
+$ui-bg-panel-body-hover: color.adjust($ui-color-primary, $alpha: -0.6);
+$ui-bg-table-hover: color.adjust($ui-color-primary, $alpha: -0.7);
+$ui-bg-card: color.adjust($ui-color-primary, $alpha: -0.9);
+$ui-bg-highlight: color.adjust($ui-color-primary, $alpha: -0.7);
+$ui-bg-active: color.adjust($ui-color-primary, $alpha: -0.3);
+
+$ui-text-subtitle: #bbbbbb;
+$ui-text: #fff;
+$ui-text-main: $ui-color-main;
+$ui-text-flag: #67c23a;
+
+$fz-medium: 22px;
+$fz-nav: 20px;
+$fz-nav-left: 16px;
+$fz-base: 14px;
+$fz-tiny: 10px;

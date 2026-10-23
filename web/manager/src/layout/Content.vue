@@ -15,17 +15,17 @@ import { computed } from "vue";
 const projectStore = useProjectStore()
 
 const heightContent = computed(() => {
-    return projectStore.contentInsets.heightContent 
-        - projectStore.contentInsets.heightToolbar 
-        + (props.heightPlus || 0) 
+    return projectStore.contentInsets.heightContent
+        - projectStore.contentInsets.heightToolbar
+        + (props.heightPlus || 0)
         - (props.isShowPagination ? projectStore.contentInsets.heightPagination : 0)
 })
 
 const props = withDefaults(defineProps<{
-    heightPlus?: number   // 高度变化，改变组件的高度
-    padding?: string  // 20px
-    isTransparent?: boolean  // 背景是否透明
-    isShowPagination?: boolean  // 是否预留底部分页高度（有 FooterPagination 时再开）
+    heightPlus?: number
+    padding?: string
+    isTransparent?: boolean
+    isShowPagination?: boolean
 }>(), {
     heightPlus: 0,
     padding: '20px 30px',
@@ -35,13 +35,15 @@ const props = withDefaults(defineProps<{
 </script>
 
 <style lang="scss" scoped>
+@use '../assets/scss/plugin' as *;
+
 .content {
-    padding: 20px 30px;
-    background-color: white;
+    background-color: $theme-bg-main;
     position: relative;
     overflow: hidden;
     overflow-y: auto;
-    &.is-transparent{
+
+    &.is-transparent {
         background-color: transparent;
     }
 }

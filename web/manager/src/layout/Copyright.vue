@@ -19,7 +19,7 @@ import {getAuthorization} from "@/utility";
 import {useRouter} from "vue-router";
 
 defineProps( {
-    height: { // 高度
+    height: {
         type: Number,
         default: 100
     }
@@ -36,23 +36,16 @@ function logout(){
 </script>
 
 <style lang="scss" scoped>
-@use "sass:color";
-@use "../assets/scss/variables" as *;
+@use "../assets/scss/plugin" as *;
+
 .copyright{
     overflow: hidden;
     display: flex;
     flex-flow: column nowrap;
     justify-content: flex-end;
-    .logo{
-        flex-shrink: 1;
-        img{
-            display: block;
-            max-width: 100%;
-        }
-    }
     .info{
         flex-shrink: 0;
-        border-top: 1px solid color.adjust($blue, $alpha: -0.8);
+        border-top: 1px solid $theme-border-main;
         display: flex;
         flex-flow: column nowrap;
         justify-content: flex-end;
@@ -60,26 +53,22 @@ function logout(){
         dl{
             font-size: 0.7rem;
             line-height: 1.5;
-            color: $text-subtitle;
+            color: $theme-text-secondary;
             display: flex;
             justify-content: space-between;
-            dd{
+            dd:hover {
+                color: $theme-primary;
             }
         }
     }
 }
 
-a{
-    &:hover{
-        color: $blue;
-        text-decoration: underline;
-    }
-}
-
 .logout-text{
     cursor: pointer;
-    color: $text-subtitle;
+    color: $theme-text-muted;
+    font-size: 0.7rem;
     &:hover{
+        color: $red;
         text-decoration: underline;
     }
 }

@@ -70,7 +70,7 @@
                             >标记已分享</ElButton>
                             <ElButton size="small" type="danger" plain icon="Delete" @click="remove(row.id)">删除</ElButton>
                         </template>
-                        <span v-else class="muted">已绑定不可删</span>
+                        <span v-else class="muted ml-1">已绑定不可删</span>
                     </template>
                 </ElTableColumn>
             </ElTable>

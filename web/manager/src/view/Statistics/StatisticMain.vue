@@ -1,7 +1,5 @@
 <template>
     <Container>
-        <Toolbar>
-        </Toolbar>
         <Content>
             <div v-if="isAdmin" class="card-charts">
                 <StatisticUserDiaryCount/>
@@ -27,7 +25,6 @@ import statisticApi from "@/api/statisticApi";
 import { getAuthorization } from "@/utility";
 import StatisticCountCard from "@/view/Statistics/StatisticCountCard.vue";
 import Container from "@/layout/Container.vue";
-import Toolbar from "@/layout/Toolbar.vue";
 import Content from "@/layout/Content.vue";
 
 const StatisticUserDiaryCount = defineAsyncComponent(() => import("@/view/Statistics/StatisticUserDiaryCount.vue"));

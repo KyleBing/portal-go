@@ -1,5 +1,5 @@
 <template>
-    <div class="login-bg" :style="`height:${projectStore.windowInsets.height / projectStore.pageScale}px`">
+    <div class="login-bg" :style="`height:${projectStore.windowInsets.height}px`">
         <div class="login-panel">
             <div class="login-title">
                 <!--                <div class="logo">-->
@@ -225,7 +225,25 @@ function sendForgot() {
     background: linear-gradient(to bottom right, color.adjust(white, $alpha: -0.5), color.adjust(white, $alpha: -0.8));
     //background-color: color.adjust(white, $alpha: -0.2);
     @include backdrop-filter(saturate(150%) blur(15px));
-    @include box-shadow(10px 10px 35px color.adjust(black, $alpha: -0.8))
+    @include box-shadow(10px 10px 35px color.adjust(black, $alpha: -0.8));
+
+    // Chrome 自动填充会给 input 加黄/蓝底，用 inset 阴影盖掉
+    :deep(.el-input__wrapper) {
+        background-color: #fff !important;
+    }
+
+    :deep(input.el-input__inner) {
+        &:-webkit-autofill,
+        &:-webkit-autofill:hover,
+        &:-webkit-autofill:focus,
+        &:-webkit-autofill:active {
+            -webkit-text-fill-color: #303133 !important;
+            caret-color: #303133;
+            transition: background-color 99999s ease-out 0s;
+            box-shadow: 0 0 0 1000px #fff inset !important;
+            -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+        }
+    }
 }
 
 .login-btn {

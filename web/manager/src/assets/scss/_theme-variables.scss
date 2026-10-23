@@ -1,0 +1,35 @@
+@use 'sass:color';
+
+$theme-bg-header-start: var(--theme-bg-header-start, #004999);
+$theme-bg-header-end: var(--theme-bg-header-end, #1a7be6);
+
+$theme-primary: var(--theme-primary, #409eff);
+$theme-primary-selected: var(--theme-primary-selected, #409eff);
+$theme-primary-hover: var(--theme-primary-hover, rgba(64, 158, 255, 0.6));
+$theme-primary-subtle: var(--theme-primary-subtle, rgba(64, 158, 255, 0.1));
+$theme-secondary: var(--theme-secondary, #409eff);
+$theme-accent: var(--theme-accent, #4cd964);
+
+$theme-bg-main: var(--theme-bg-main, #eeeeee);
+$theme-bg-card: var(--theme-bg-card, rgba(229, 229, 229, 0.37));
+$theme-bg-panel: var(--theme-bg-panel, rgba(244, 244, 244, 0.62));
+$theme-bg-panel-header: var(--theme-bg-panel-header, rgba(255, 255, 255, 0.8));
+$theme-bg-table-hover: var(--theme-bg-table-hover, rgba(0, 89, 255, 0.13));
+$theme-bg-active: var(--theme-bg-active, rgb(211, 233, 255));
+$theme-bg-opaque: var(--theme-bg-opaque, #ffffff);
+$theme-bg-opaque-darker: var(--theme-bg-opaque-darker, rgb(235, 235, 235));
+
+$theme-border-card: var(--theme-border-card, rgb(217, 217, 217));
+$theme-border-main: var(--theme-border-main, rgba(196, 196, 196, 0.41));
+$theme-border-active: var(--theme-border-active, #409eff);
+$theme-border-table: var(--theme-border-table, rgba(0, 0, 0, 0.1));
+$theme-border-light: var(--theme-border-light, rgba(196, 196, 196, 0.2));
+$theme-border-black: color.adjust(black, $alpha: -0.8);
+
+$theme-text-main: var(--theme-text-main, #444444);
+$theme-text-secondary: var(--theme-text-secondary, #666666);
+$theme-text-muted: var(--theme-text-muted, #999999);
+$theme-text-white: var(--theme-text-white, #ffffff);
+
+$theme-alarm: var(--theme-alarm, #f56c6c);
+$theme-top-navbar-active: var(--theme-top-navbar-active, #409eff);

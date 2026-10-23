@@ -1,6 +1,6 @@
 <template>
     <ElContainer>
-        <ElHeader>
+        <ElHeader height="60px">
             <TopHeader/>
         </ElHeader>
 
@@ -21,10 +21,6 @@ import Aside from "./Aside.vue";
 </script>
 
 <style scoped lang="scss">
-@use "../assets/scss/variables" as *;
-@use "../assets/scss/utility" as *;
-@use "../assets/scss/font" as *;
-
 .el-header {
     padding: 0;
 }

@@ -1,8 +1,9 @@
 <template>
     <nav>
         <ElButton :round="false"
-                  @click="handleCollapseToggle"
-                  :style="`width: ${store.navWidth}px; border-radius: 0; border-width: 0 0 1px 0`"
+                  class="collapse-btn"
+                  @click="store.toggleNavMenu()"
+                  :style="`width: ${store.navWidth}px;`"
         >
             {{ store.navMenuIsClosed ? '展开' : '折叠' }}
         </ElButton>
@@ -95,10 +96,6 @@ watch(route, () => {
 })
 
 
-function handleCollapseToggle() {
-    store.navMenuIsClosed = !store.navMenuIsClosed
-    store.navWidth = store.navMenuIsClosed ? 64 : 200
-}
 function handleOpen() {
     // 处理导航组展开
 }
@@ -117,94 +114,74 @@ function handleMenu(key: string) {
 </script>
 
 <style lang="scss">
-@use "sass:color";
-@use "@/assets/scss/variables" as *;
-@use "@/assets/scss/utility" as *;
-
-$active-submenu-title: color.adjust($color-main, $lightness: -30%);
-$active-submenu-bg: color.adjust($color-main, $alpha: -0.9);
-$hover-menu-bg: color.adjust($color-main, $alpha: -0.4);
+@use '../assets/scss/plugin' as *;
 
 .el-menu {
     border: none;
 }
-.el-sub-menu{
-    .el-menu-item{
+
+.el-sub-menu {
+    .el-menu-item {
         line-height: 40px;
         height: 40px;
-        &:after{
-            background-color: $border-color-nav;
+
+        &:after {
+            background-color: $theme-border-main;
         }
     }
-    .el-menu{
-        .el-menu-item:hover{
-            background-color: $active-submenu-bg;
-        }
+
+    .el-menu .el-menu-item:hover {
+        background-color: $theme-primary-subtle;
     }
-    &.is-active{
-        background-color: $active-submenu-bg;
-        .el-sub-menu__title{
-            color: $active-submenu-title;
-            &:hover{
+
+    &.is-active {
+        background-color: $theme-primary-subtle;
+
+        .el-sub-menu__title {
+            color: $theme-primary;
+        }
+
+        .el-menu .el-menu-item {
+            color: $theme-primary;
+            background-color: $theme-primary-subtle;
+
+            &.is-active {
                 color: white;
-            }
-        }
-        .el-menu{
-            .el-menu-item{
-                color: $active-submenu-title;
-                background-color: $active-submenu-bg;
-                &.is-active{
-                    color: white;
-                    //background-color: $active-submenu-bg;
-                    background-color: color.adjust($color-main, $saturation: -20%);
-                }
-                &:hover{
-                    color: white;
-                }
-            }
-        }
-    }
-    &.is-opened{
-        .el-menu{
-            &:after{
-                background-color: #eeeeee;
-                content: "";
-                position: absolute;
-                bottom: 0;
-                left: 20px;
-                height: 1px;
-                width: 100%;
-                transform: scaleY(0.5);
+                background-color: $theme-primary-selected;
             }
         }
     }
 }
 
-.el-menu-item, .el-sub-menu__title{
+.el-menu-item,
+.el-sub-menu__title {
     line-height: 40px !important;
     height: 40px !important;
     font-size: 0.9rem;
     color: $text-main;
     border-bottom: none;
     transition: all 0s;
-    i{
+
+    i {
         color: inherit;
     }
 
     &.is-active {
         color: white !important;
-        background-color: color.adjust($color-main, $saturation: -20%);
-        &:hover{
-            background-color: color.adjust($color-main, $saturation: -20%) !important;
+        background-color: $theme-primary-selected;
+
+        &:hover {
+            background-color: $theme-primary-selected !important;
         }
     }
-    &:hover{
+
+    &:hover {
         color: white;
-        background-color: $hover-menu-bg !important;
-        transition: all 0s;
+        background-color: $theme-primary-hover !important;
     }
-    &:after{
-        background-color: $border-color-nav;
+
+    &:after {
+        background-color: $theme-border-main;
         content: '';
         position: absolute;
         bottom: 0;
@@ -213,13 +190,19 @@ $hover-menu-bg: color.adjust($color-main, $alpha: -0.4);
         width: 100%;
         transform: scaleY(0.5);
     }
-    &:last-child:after{
+
+    &:last-child:after {
         content: none;
     }
 }
-.el-menu--inline{
-    .el-menu-item{
-        padding-left: 60px !important;
-    }
+
+.el-menu--inline .el-menu-item {
+    padding-left: 60px !important;
+}
+
+.collapse-btn {
+    border-radius: 0 !important;
+    border: none !important;
+    border-bottom: 1px solid $theme-border-main !important;
 }
 </style>

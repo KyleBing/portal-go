@@ -1,13 +1,5 @@
 <template>
     <Container>
-        <Toolbar>
-            <template #left>
-            </template>
-            <template #center>
-            </template>
-            <template #right>
-            </template>
-        </Toolbar>
         <ElRow>
             <ElCol :lg="10" :span="24">
                 <ElForm
@@ -37,7 +29,6 @@ import type { FormInstance } from 'element-plus'
 import userApi from "@/api/userApi"
 import { deleteAuthorization } from "@/utility"
 import Container from "@/layout/Container.vue"
-import Toolbar from "@/layout/Toolbar.vue";
 
 const router = useRouter()
 const formChangePassword = ref<FormInstance>()

@@ -1,6 +1,6 @@
 <template>
     <ElDropdown ref="refDropDown" trigger="click" @command="menuClicked">
-        <div class="ElDropdown-link">
+        <div class="dropdown-link">
             <ElAvatar
                 :size="32"
                 class="avatar"
@@ -9,16 +9,9 @@
         </div>
         <template #dropdown>
             <ElDropdown-menu>
-
                 <ElDropdownItem command="changePassword">
                     <ElIcon><Key /></ElIcon>  修改密码
                 </ElDropdownItem>
-<!--                <ElDropdownItem command="changeProfile">-->
-<!--                    <ElIcon><Postcard /></ElIcon>  编辑资料-->
-<!--                </ElDropdownItem>-->
-<!--                <ElDropdownItem divided command="setting">-->
-<!--                    <ElIcon><Setting /></ElIcon> 设置-->
-<!--                </ElDropdownItem>-->
                 <ElDropdownItem divided disabled>
                     <ElIcon><UserFilled /></ElIcon>
                     {{ getAuthorization().nickname }}
@@ -42,6 +35,7 @@ import {getAuthorization} from "@/utility";
 
 const router = useRouter()
 const refDropDown = ref()
+
 function menuClicked(command: string){
     switch (command){
         case 'changePassword':
@@ -60,11 +54,16 @@ function menuClicked(command: string){
 </script>
 
 <style scoped lang="scss">
-@use "../assets/scss/variables" as *;
-@use "../assets/scss/utility" as *;
+@use "../assets/scss/plugin" as *;
+
+.dropdown-link {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
 
 .avatar{
-    @extend .unselectable;
+    user-select: none;
     cursor: pointer;
     &:hover{
         outline: 2px solid $cyan;

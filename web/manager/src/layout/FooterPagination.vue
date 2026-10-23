@@ -40,7 +40,7 @@ function pagerChange(pageNo: number){
 </script>
 
 <style scoped lang="scss">
-@use "@/assets/scss/variables" as *;
+@use "@/assets/scss/plugin" as *;
 .page-footer{
     font-size: $fz-small;
     padding: 0 10px;
@@ -48,5 +48,8 @@ function pagerChange(pageNo: number){
     height: 50px;
     display: flex;
     justify-content: flex-end;
+    background-color: $theme-bg-panel;
+    border-top: 1px solid $theme-border-main;
+    color: $theme-text-main;
 }
 </style>

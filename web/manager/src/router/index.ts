@@ -1,6 +1,5 @@
 import {createRouter, createWebHashHistory, RouteRecordRaw} from "vue-router";
-import { useProjectStore } from "@/pinia";
-import {getAuthorization, resizeHolePage} from "@/utility";
+import {getAuthorization} from "@/utility";
 import { ElMessage } from "element-plus";
 /**
  * __路由命名规则__
@@ -63,16 +62,6 @@ router.beforeEach((to, _, next) => {
         next()
     }
 })
-
-router.afterEach((to) => {
-    const projectStore = useProjectStore()
-    let el = document.getElementById('app')
-
-    // 缩放界面
-    projectStore.pageScale =   innerWidth / 1920
-    resizeHolePage(to.path, el)
-})
-
 
 export  {
     router,

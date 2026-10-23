@@ -107,11 +107,8 @@ const userRules = computed(() => ({
         : { required: false },
 }))
 
-// 页面整体按 1920 缩放且 body 不能滚动，注册表单在可视高度内自行滚动
-const viewportHeight = computed(() => {
-    const scale = projectStore.pageScale || 1
-    return projectStore.windowInsets.height / scale
-})
+// body 不能滚动，注册表单在可视高度内自行滚动
+const viewportHeight = computed(() => projectStore.windowInsets.height)
 
 function submit() {
     if (!registerForm.value || submitting.value) return
@@ -161,6 +158,24 @@ function submit() {
     border-radius: 16px;
     background: #fff;
     box-shadow: 0 12px 40px rgba(20, 24, 28, 0.08);
+
+    // Chrome 自动填充异色背景
+    :deep(.el-input__wrapper) {
+        background-color: #fff !important;
+    }
+
+    :deep(input.el-input__inner) {
+        &:-webkit-autofill,
+        &:-webkit-autofill:hover,
+        &:-webkit-autofill:focus,
+        &:-webkit-autofill:active {
+            -webkit-text-fill-color: #303133 !important;
+            caret-color: #303133;
+            transition: background-color 99999s ease-out 0s;
+            box-shadow: 0 0 0 1000px #fff inset !important;
+            -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+        }
+    }
 }
 
 .register-title {

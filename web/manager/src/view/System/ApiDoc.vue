@@ -1,6 +1,5 @@
 <template>
     <Container>
-        <Toolbar :is-show-search-bar="false"/>
         <Content padding="0" :is-transparent="true">
             <div class="api-doc">
                 <aside class="api-nav">
@@ -137,7 +136,6 @@
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import Container from '@/layout/Container.vue'
-import Toolbar from '@/layout/Toolbar.vue'
 import Content from '@/layout/Content.vue'
 import {
     API_BASE,

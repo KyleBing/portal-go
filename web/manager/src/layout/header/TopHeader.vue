@@ -53,42 +53,40 @@ const systemStatisticInfo = ref<SystemStatisticInfo>({
 </script>
 
 <style lang="scss" scoped>
-@use "../../assets/scss/variables" as *;
-@use "sass:color";
+@use 'sass:color';
+@use '../../assets/scss/plugin' as *;
 
 .header {
     justify-content: space-between;
     padding: 0 20px;
-    background: linear-gradient(to right, color.scale($blue, $lightness: -20%), color.scale($blue, $saturation: -20%));
-    background: linear-gradient(to right, color.scale($color-main, $lightness: -20%), color.scale($color-main, $saturation: -20%));
-    background-color: $blue;
+    background: linear-gradient(to right, $theme-bg-header-start, $theme-bg-header-end);
     display: flex;
     font-size: 1.3rem;
     flex-flow: row nowrap;
     align-items: center;
     line-height: 60px;
     color: color.adjust(white, $alpha: -0.1);
+    border-bottom: 1px solid $theme-border-light;
+}
+
+.header-left,
+.header-center,
+.header-right {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
 }
 
 .header-left {
-    flex-flow: row nowrap;
-    display: flex;
     justify-content: flex-start;
-    align-items: center;
 }
 
 .header-center {
-    flex-flow: row nowrap;
-    display: flex;
     justify-content: flex-start;
-    align-items: center;
 }
 
 .header-right {
     padding-right: 20px;
-    flex-flow: row nowrap;
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
+    gap: 5px;
 }
 </style>

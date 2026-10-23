@@ -75,62 +75,34 @@ function topNavClicked(menuItem: RouteRecordRaw){
 <style lang="scss" scoped>
 @use "sass:math";
 @use "sass:color";
-@use "../../assets/scss/variables" as *;
-@use "../../assets/scss/utility" as *;
-@use "../../assets/scss/font" as *;
+@use "../../assets/scss/plugin" as *;
 
 $height-nav: 40px;
-
-$bg-navbar-hover: color.adjust(white, $alpha: -0.8);
-$bg-navbar-active: color.adjust(white, $alpha: -0.1);
-
 
 .nav-list {
     overflow-x: auto;
     display: flex;
     justify-content: center;
     padding: math.div(($height-nav - 30), 2);
-    &::-webkit-scrollbar {
-        z-index: 50;
-        width: 8px;
-        height: 8px; }
-
-    &::-webkit-scrollbar-track {
-        border: none;
-        background-color: rgba(0, 0, 0, 0); }
-
-    &::-webkit-scrollbar-thumb {
-        -webkit-border-radius: 5px;
-        -moz-border-radius: 5px;
-        border-radius: 5px;
-        background-color: color.adjust($color-main, $lightness: 10%);
-        transition: all .2s;
-        height: 3px; }
-
-    &:hover::-webkit-scrollbar-thumb {
-        background-color: color.adjust($color-main, $lightness: 40%);
-        transition: all .2s; }
-
-    &::-webkit-scrollbar-button {
-        display: none; }
-
-    &::-webkit-scrollbar-corner {
-        display: none; }
 
     .nav-list-item {
         flex-shrink: 0;
         letter-spacing: 1px;
-        @extend .unselectable;
+        user-select: none;
         cursor: pointer;
         font-weight: bold;
         @include border-radius(8px);
-        padding: 0 15px;
+        padding: 0 10px;
         margin-right: 5px;
         font-size: $fz-navbar;
         line-height: 38px;
-        @extend .btn-like;
+
+        &:active {
+            @include transform(translateY(2px));
+        }
         text-shadow: 1px 1px 1px color.adjust(black, $alpha: -0.8);
         position: relative;
+
         .badge-custom{
             @include box-shadow(1px 1px 1px color.adjust(black, $alpha: -0.7));
             padding: 2px 6px;
@@ -145,17 +117,15 @@ $bg-navbar-active: color.adjust(white, $alpha: -0.1);
             border: 1px solid color.adjust(white, $alpha: -0.5);
         }
 
-        &:hover {
-            background-color: $bg-navbar-hover;
+        &:hover:not(.active) {
+            background-color: color-mix(in srgb, $theme-top-navbar-active 50%, transparent);
         }
+
         &.active {
-            text-shadow: none;
-            border-color: $color-main;
-            background-color: $bg-navbar-active;
-            color: $color-main;
+            background-color: $theme-top-navbar-active;
+            color: white;
         }
     }
-
 }
 
 </style>
