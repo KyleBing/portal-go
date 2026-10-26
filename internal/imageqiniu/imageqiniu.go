@@ -19,6 +19,8 @@ const dbName = db.Diary
 const currentTable = "image_qiniu"
 
 func Register(r *gin.RouterGroup) {
+	// RedirectTrailingSlash 已关闭，无斜杠路径 /image-qiniu 需单独注册，否则直接 404
+	r.GET("", handleToken)
 	r.GET("/", handleToken)
 	r.GET("/list", handleList)
 	r.POST("/add", handleAdd)

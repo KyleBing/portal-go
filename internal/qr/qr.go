@@ -17,6 +17,8 @@ const currentTable = "qrs"
 
 // RegisterFront 注册二维码前台接口（/qr-front）
 func RegisterFront(r *gin.RouterGroup) {
+	// RedirectTrailingSlash 已关闭，无斜杠路径 /qr-front 需单独注册，否则直接 404
+	r.GET("", handleFront)
 	r.GET("/", handleFront)
 }
 

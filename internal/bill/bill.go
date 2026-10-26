@@ -103,6 +103,8 @@ func escapeAll(items []string) []string {
 }
 
 func Register(r *gin.RouterGroup) {
+	// RedirectTrailingSlash 已关闭，无斜杠路径 /bill 需单独注册，否则直接 404
+	r.GET("", handleAll)
 	r.GET("/", handleAll)
 	r.GET("/sorted", handleSorted)
 	r.GET("/keys", handleKeys)

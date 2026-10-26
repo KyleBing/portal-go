@@ -12,6 +12,8 @@ const dbName = db.Diary
 const currentTable = "thumbs_up"
 
 func Register(r *gin.RouterGroup) {
+	// RedirectTrailingSlash 已关闭，无斜杠路径 /thumbs-up 需单独注册，否则直接 404
+	r.GET("", handleGet)
 	r.GET("/", handleGet)
 	r.GET("/all", handleAll)
 	r.GET("/list", handleList)

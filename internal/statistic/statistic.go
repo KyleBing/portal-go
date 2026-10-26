@@ -13,6 +13,8 @@ import (
 const dbName = db.Diary
 
 func Register(r *gin.RouterGroup) {
+	// RedirectTrailingSlash 已关闭，无斜杠路径 /statistic 需单独注册，否则直接 404
+	r.GET("", handleOverview)
 	r.GET("/", handleOverview)
 	r.GET("/user-data-diary", handleUserDataDiary)
 	r.GET("/category", handleCategory)
