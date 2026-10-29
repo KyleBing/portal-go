@@ -35,6 +35,18 @@ const MENUS_PRESET: Array<EntityMenu> = [
                 "icon": "Folder",
                 "isNeedAdminPermission": true,
                 "children": []
+            },
+            {
+                "name": "支付宝账单",
+                "type": EnumMenuType['菜单'],
+                "path": "/diary/bill-import",
+                "match_path": "",
+                "component": "Diary/BillImport.vue",
+                "visible": EnumMenuVisible['可见'],
+                "redirect": "",
+                "icon": "Tickets",
+                "isNeedAdminPermission": false,
+                "children": []
             }
 
         ]

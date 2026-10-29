@@ -31,6 +31,15 @@ export default defineConfig({
         },
     },
     base: "./",
+    // 使用 Sass modern API，去掉 legacy-js-api 弃用提示
+    css: {
+        preprocessorOptions: {
+            scss: {
+                api: "modern-compiler",
+                silenceDeprecations: ["legacy-js-api"],
+            },
+        },
+    },
     build: {
         cssCodeSplit: true,
         rollupOptions: {

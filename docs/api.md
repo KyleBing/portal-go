@@ -57,6 +57,7 @@
 | [日记](#日记-diary) | `/diary` | 核心日记 CRUD |
 | [日记分类](#日记分类-diary-category) | `/diary-category` | 分类字典 |
 | [账单](#账单-bill) | `/bill` | 解析 `category=bill` 日记 |
+| [支付宝账单导入](#支付宝账单导入-bill-import) | `/bill-import` | 上传 CSV、别名、写入日记账单 |
 | [银行卡](#银行卡-bank-card) | `/bank-card` | 固定标题日记内容 |
 | [二维码](#二维码-qr) | `/qr-front` `/qr-manager` | 车贴二维码 |
 | [地图路线](#地图路线-map-route) | `/map-route` | 路线 |
@@ -203,6 +204,25 @@
 | GET | `/day-sum` | A | 日收支合计 |
 | GET | `/month-sum` | A | 月合计；可选 `keyword` |
 | GET | `/borrow` | A | 标题为「借还记录」的日记内容 |
+
+---
+
+## 支付宝账单导入 `/bill-import`
+
+登录用户按 `uid` 隔离。上传支付宝交易明细 CSV，用别名规则匹配短名称后写入日记 `category=bill`、标题「账单」。默认只写「可写入」桶；`guess` / `confirm` 需显式勾选。未识别不会用支付宝原文写入。
+
+| 方法 | 路径 | 鉴权 | 说明 |
+|------|------|------|------|
+| GET | `/aliases` | A | 读取 slots + rules；无配置时种子默认别名 |
+| PUT | `/aliases` | A | 整体保存别名配置 |
+| POST | `/aliases/seed` | A | Body `batchId`；从未识别对方追加 `guess` 草稿规则 |
+| POST | `/upload` | A | multipart `file`（CSV）；建批次并返回分桶预览 |
+| GET | `/preview` | A | Query `batchId`；用当前别名重新分类 |
+| POST | `/apply` | A | Body `batchId`, `includeGuess`, `includeConfirm`；合并写入日记并记订单号 |
+| GET | `/batches` | A | Query `pageNo`, `pageSize`；导入历史 |
+| GET | `/orders` | A | Query `batchId`；该批次已写入的订单号 |
+
+Manager 菜单：**日记 → 支付宝账单**（`#/diary/bill-import`）。
 
 ---
 

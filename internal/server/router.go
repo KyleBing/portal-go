@@ -7,6 +7,7 @@ import (
 
 	"github.com/KyleBing/portal-go/internal/bankcard"
 	"github.com/KyleBing/portal-go/internal/bill"
+	"github.com/KyleBing/portal-go/internal/billimport"
 	"github.com/KyleBing/portal-go/internal/category"
 	"github.com/KyleBing/portal-go/internal/diary"
 	"github.com/KyleBing/portal-go/internal/file"
@@ -98,6 +99,7 @@ func registerAll(rg *gin.RouterGroup) {
 	category.Register(rg.Group("/diary-category"))
 	bankcard.Register(rg.Group("/bank-card"))
 	bill.Register(rg.Group("/bill"))
+	billimport.Register(rg.Group("/bill-import"))
 
 	thumbsup.Register(rg.Group("/thumbs-up"))
 	file.Register(rg.Group("/file-manager"))
