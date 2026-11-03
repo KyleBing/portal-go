@@ -21,6 +21,7 @@
                     <ElButton v-if="batchId" type="primary" :loading="applying" @click="doApply">写入日记账单</ElButton>
                 </template>
                 <template v-else-if="activeTab === 'aliases'">
+                    <span class="alias-hint">仅当前登录账号，不与其他用户共用</span>
                     <ElButton type="success" icon="Plus" @click="addRule">新增规则</ElButton>
                     <ElButton @click="loadAliases">重新加载</ElButton>
                     <ElButton type="primary" :loading="aliasSaving" @click="saveAliases">保存别名</ElButton>
@@ -142,7 +143,7 @@
                 </ElTableColumn>
                 <ElTableColumn label="匹配词（逗号分隔）" min-width="200">
                     <template #default="{ row }">
-                        <ElInput v-model="row.matchText" size="small" placeholder="济南和仟,金舆店"/>
+                        <ElInput v-model="row.matchText" size="small" placeholder="商户名,分店名"/>
                     </template>
                 </ElTableColumn>
                 <ElTableColumn label="短名称" min-width="140">
@@ -152,7 +153,7 @@
                 </ElTableColumn>
                 <ElTableColumn label="餐次门店" min-width="120">
                     <template #default="{ row }">
-                        <ElInput v-model="row.meal_place" size="small" placeholder="meal_place"/>
+                        <ElInput v-model="row.meal_place" size="small" placeholder="店名"/>
                     </template>
                 </ElTableColumn>
                 <ElTableColumn label="商品限定" min-width="120">
@@ -652,6 +653,11 @@ h4 {
     font-size: 14px;
 }
 .ref-muted {
+    color: #888;
+    font-size: 12px;
+}
+.alias-hint {
+    margin-right: 12px;
     color: #888;
     font-size: 12px;
 }

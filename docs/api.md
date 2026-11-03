@@ -209,11 +209,11 @@
 
 ## 支付宝账单导入 `/bill-import`
 
-登录用户按 `uid` 隔离。上传支付宝交易明细 CSV，用别名规则匹配短名称后写入日记 `category=bill`、标题「账单」。默认只写「可写入」桶；`guess` / `confirm` 需显式勾选。未识别不会用支付宝原文写入。
+登录用户按 `uid` 隔离，别名规则只属于当前账号。上传支付宝交易明细 CSV，用该用户自己的别名规则匹配短名称后写入日记 `category=bill`、标题「账单」。默认只写「可写入」桶；`guess` / `confirm` 需显式勾选。未识别不会用支付宝原文写入。
 
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
-| GET | `/aliases` | A | 读取 slots + rules；无配置时种子默认别名 |
+| GET | `/aliases` | A | 读取当前用户 slots + rules；无配置时只写入空规则和默认餐次 |
 | PUT | `/aliases` | A | 整体保存别名配置 |
 | POST | `/aliases/seed` | A | Body `batchId`；从未识别对方追加 `guess` 草稿规则 |
 | POST | `/upload` | A | multipart `file`（CSV）；建批次并返回分桶预览 |

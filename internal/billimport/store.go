@@ -2,7 +2,6 @@ package billimport
 
 import (
 	"database/sql"
-	_ "embed"
 	"encoding/json"
 	"time"
 
@@ -10,22 +9,24 @@ import (
 	"github.com/KyleBing/portal-go/internal/util"
 )
 
-//go:embed default_aliases.json
-var defaultAliasesJSON []byte
-
 func openDB() (*sql.DB, error) {
 	return db.Open(db.Diary)
 }
 
-func defaultAliasConfig() (AliasConfig, error) {
-	var cfg AliasConfig
-	if err := json.Unmarshal(defaultAliasesJSON, &cfg); err != nil {
-		return cfg, err
+// emptyAliasConfig 新用户仅有通用餐次，规则为空，不套用他人别名
+func emptyAliasConfig() AliasConfig {
+	return AliasConfig{
+		Slots: []Slot{
+			{Name: "夜宵", Start: 0, End: 4},
+			{Name: "早餐", Start: 4, End: 10.5},
+			{Name: "午餐", Start: 10.5, End: 16},
+			{Name: "晚餐", Start: 16, End: 24},
+		},
+		Rules: []Rule{},
 	}
-	return cfg, nil
 }
 
-// ensureAliasConfig 无配置时写入默认种子
+// ensureAliasConfig 按 uid 读取；无记录时只写入该用户的空规则
 func ensureAliasConfig(uid int64) (AliasConfig, error) {
 	diary, err := openDB()
 	if err != nil {
@@ -42,15 +43,15 @@ func ensureAliasConfig(uid int64) (AliasConfig, error) {
 		if err := json.Unmarshal(rulesRaw, &cfg.Rules); err != nil {
 			return cfg, err
 		}
+		if cfg.Rules == nil {
+			cfg.Rules = []Rule{}
+		}
 		return cfg, nil
 	}
 	if err != sql.ErrNoRows {
 		return AliasConfig{}, err
 	}
-	cfg, err := defaultAliasConfig()
-	if err != nil {
-		return cfg, err
-	}
+	cfg := emptyAliasConfig()
 	if err := saveAliasConfig(uid, cfg); err != nil {
 		return cfg, err
 	}

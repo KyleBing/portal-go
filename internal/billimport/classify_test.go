@@ -1,27 +1,46 @@
 package billimport
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 )
 
-func TestDefaultAliasesLoad(t *testing.T) {
-	cfg, err := defaultAliasConfig()
+// sampleAliasConfig 测试用样例规则，不作为新用户默认配置
+func sampleAliasConfig(t *testing.T) AliasConfig {
+	t.Helper()
+	raw, err := os.ReadFile("default_aliases.json")
 	if err != nil {
 		t.Fatal(err)
 	}
+	var cfg AliasConfig
+	if err := json.Unmarshal(raw, &cfg); err != nil {
+		t.Fatal(err)
+	}
+	return cfg
+}
+
+func TestEmptyAliasConfigHasNoRules(t *testing.T) {
+	cfg := emptyAliasConfig()
+	if len(cfg.Slots) == 0 {
+		t.Fatal("slots should keep generic meal times")
+	}
+	if len(cfg.Rules) != 0 {
+		t.Fatalf("new user must not inherit sample rules, got %d", len(cfg.Rules))
+	}
+}
+
+func TestSampleAliasesLoad(t *testing.T) {
+	cfg := sampleAliasConfig(t)
 	if len(cfg.Slots) == 0 || len(cfg.Rules) == 0 {
-		t.Fatalf("empty defaults: slots=%d rules=%d", len(cfg.Slots), len(cfg.Rules))
+		t.Fatalf("empty sample: slots=%d rules=%d", len(cfg.Slots), len(cfg.Rules))
 	}
 }
 
 func TestClassifyChaoYiXingBreakfast(t *testing.T) {
-	cfg, err := defaultAliasConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
+	cfg := sampleAliasConfig(t)
 	when := time.Date(2026, 10, 26, 6, 44, 0, 0, time.Local)
 	items := classify([]RawRow{{
 		When: when, Who: "济南和仟运营管理有限公司", Product: "金舆店-店内购物",
@@ -65,7 +84,7 @@ func TestParseSampleCSV(t *testing.T) {
 	if len(rows) == 0 {
 		t.Fatal("no rows")
 	}
-	cfg, _ := defaultAliasConfig()
+	cfg := sampleAliasConfig(t)
 	items := classify(rows, cfg)
 	c := countBuckets(items)
 	if c.Row != len(rows) {
