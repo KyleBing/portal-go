@@ -23,5 +23,7 @@ import Aside from "./Aside.vue";
 <style scoped lang="scss">
 .el-header {
     padding: 0;
+    display: flex;
+    flex-direction: column;
 }
 </style>

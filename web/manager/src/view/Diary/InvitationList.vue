@@ -2,7 +2,7 @@
     <Container>
         <Toolbar :is-show-search-bar="false">
             <template #left>
-                <ElRadioGroup v-model="status" size="small" @change="onStatusChange">
+                <ElRadioGroup v-model="status" @change="onStatusChange">
                     <ElRadioButton value="all">全部 {{ summary.total }}</ElRadioButton>
                     <ElRadioButton value="unused">未使用 {{ summary.unused }}</ElRadioButton>
                     <ElRadioButton value="used">已使用 {{ summary.used }}</ElRadioButton>
@@ -18,7 +18,7 @@
                 class="table-narrow"
                 size="small"
                 stripe
-                :height="projectStore.contentInsets.heightContent - 130"
+                :height="projectStore.contentInsets.heightContent - projectStore.contentInsets.heightToolbar - projectStore.contentInsets.heightPagination"
                 :data="list"
                 v-loading="loading"
                 empty-text="暂无邀请码"

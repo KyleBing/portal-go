@@ -1,6 +1,9 @@
 package thumbsup
 
 import (
+	"encoding/json"
+	"strconv"
+
 	"github.com/KyleBing/portal-go/internal/db"
 	"github.com/KyleBing/portal-go/internal/middleware"
 	"github.com/KyleBing/portal-go/internal/response"
@@ -62,13 +65,11 @@ func handleList(c *gin.Context) {
 }
 
 func handleAdd(c *gin.Context) {
-	var body struct {
-		Name        string `json:"name"`
-		Count       int    `json:"count"`
-		Description string `json:"description"`
-		LinkAddress string `json:"link_address"`
+	var body thumbsUpBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		response.Error(c, "", "参数错误")
+		return
 	}
-	_ = c.ShouldBindJSON(&body)
 	diary, _ := db.Open(dbName)
 	exist, _ := db.QueryMaps(diary, `select * from `+currentTable+` where name=?`, body.Name)
 	if len(exist) > 0 {
@@ -86,7 +87,7 @@ func handleAdd(c *gin.Context) {
 	}
 	now := util.NowString()
 	res, err := diary.Exec(`insert into `+currentTable+`(name, count, description, link_address, date_init) values(?,?,?,?,?)`,
-		body.Name, body.Count, body.Description, body.LinkAddress, now)
+		body.Name, body.Count.Int(), body.Description, body.LinkAddress, now)
 	if err != nil {
 		response.Error(c, err.Error(), "点赞添加失败")
 		return
@@ -106,16 +107,22 @@ func handleModify(c *gin.Context) {
 		response.Error(c, "", "无权操作")
 		return
 	}
-	var body struct {
-		Name        string `json:"name"`
-		Count       int    `json:"count"`
-		Description string `json:"description"`
-		LinkAddress string `json:"link_address"`
+	var body thumbsUpBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		response.Error(c, "", "参数错误")
+		return
 	}
-	_ = c.ShouldBindJSON(&body)
+	whereName := body.OriginName
+	if whereName == "" {
+		whereName = body.Name
+	}
+	if whereName == "" {
+		response.Error(c, "", "缺少标识名")
+		return
+	}
 	diary, _ := db.Open(dbName)
 	_, err := diary.Exec(`update `+currentTable+` set name = ?, count = ?, description = ?, link_address = ? where name = ?`,
-		body.Name, body.Count, body.Description, body.LinkAddress, body.Name)
+		body.Name, body.Count.Int(), body.Description, body.LinkAddress, whereName)
 	if err != nil {
 		response.Error(c, err.Error(), "点赞编辑失败")
 		return
@@ -147,3 +154,38 @@ func handleDelete(c *gin.Context) {
 	util.UpdateUserLastLoginTime(user.UID)
 	response.Success(c, nil, "删除成功")
 }
+
+type thumbsUpBody struct {
+	Name        string   `json:"name"`
+	OriginName  string   `json:"origin_name"`
+	Count       flexInt  `json:"count"`
+	Description string   `json:"description"`
+	LinkAddress string   `json:"link_address"`
+}
+
+// ElInput 会把 count 变成字符串，兼容 number / string
+type flexInt int
+
+func (f *flexInt) UnmarshalJSON(b []byte) error {
+	if len(b) == 0 || string(b) == "null" {
+		*f = 0
+		return nil
+	}
+	var n int
+	if err := json.Unmarshal(b, &n); err == nil {
+		*f = flexInt(n)
+		return nil
+	}
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return err
+	}
+	*f = flexInt(n)
+	return nil
+}
+
+func (f flexInt) Int() int { return int(f) }

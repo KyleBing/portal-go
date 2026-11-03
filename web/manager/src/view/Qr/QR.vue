@@ -127,27 +127,35 @@
         </ElRow>
 
 
-        <!-- MODAL -->
+        <!-- 编辑窗口：基础信息 + 开关一行，文案/车辆左右分栏，图片并排 -->
         <ElDialog
+            class="qr-dialog"
             :title="modalTitle"
             v-model="modalEdit"
-            width="50%"
-            :before-close="closeModal">
+            width="920px"
+            top="4vh"
+            :close-on-click-modal="false"
+            :before-close="closeModal"
+            @closed="onDialogClosed">
             <ElForm
-                size="small"
+                class="qr-form"
                 :model="formCode"
                 :rules="codeRules"
-                ref="codeModify" label-width="100px">
-                <ElRow>
-
-                    <ElCol :xs="24" :md="12">
-                        <ElFormItem label="创建时间" prop="date_init">
-                            <ElInput autocomplete="off" :disabled="true" v-model="formCode.date_init"></ElInput>
+                ref="codeModify"
+                label-width="88px">
+                <ElRow :gutter="16">
+                    <ElCol :span="8">
+                        <ElFormItem label="HASH" prop="hash">
+                            <ElInput autocomplete="off" :disabled="!!editingHash" v-model="formCode.hash" placeholder="唯一标识">
+                                <template v-if="!editingHash" #append>
+                                    <ElButton @click="fillRandomHash">随机</ElButton>
+                                </template>
+                            </ElInput>
                         </ElFormItem>
                     </ElCol>
-                    <ElCol :xs="24" :md="12">
+                    <ElCol :span="8">
                         <ElFormItem label="所属" prop="uid">
-                            <ElSelect v-model="formCode.uid" placeholder="请选择">
+                            <ElSelect v-model="formCode.uid" placeholder="请选择用户" filterable style="width: 100%">
                                 <ElOption
                                     v-for="user in userList"
                                     :key="user.uid"
@@ -157,121 +165,84 @@
                             </ElSelect>
                         </ElFormItem>
                     </ElCol>
-                    <ElCol :xs="24" :md="12">
-                        <ElFormItem label="hash" prop="hash">
-                            <ElInput autocomplete="off" :disabled="!!editingHash" v-model="formCode.hash"></ElInput>
-                        </ElFormItem>
-                    </ElCol>
-                    <ElCol :xs="24" :md="8">
-                        <ElFormItem class="mb-0" label="被访次数" prop="visit_count">
+                    <ElCol :span="8">
+                        <ElFormItem label="访问次数" prop="visit_count">
                             <ElInput autocomplete="off" v-model="formCode.visit_count">
-                                <ElButton slot="append" icon="Close" @click="clearVisitCount">清空</ElButton>
+                                <template #append>
+                                    <ElButton :disabled="!editingHash" @click="clearVisitCount">清零</ElButton>
+                                </template>
                             </ElInput>
                         </ElFormItem>
                     </ElCol>
                 </ElRow>
 
-                <ElDivider content-position="left"><b>开关</b></ElDivider>
-                <ElRow>
-                    <ElCol :xs="24" :md="6">
-                        <ElFormItem label="公开" prop="is_public">
-                            <ElSwitch :active-value="1" :inactive-value="0" v-model="formCode.is_public"/>
-                        </ElFormItem>
-                    </ElCol>
-                </ElRow>
-                <ElRow>
-                    <ElCol :xs="24" :md="8">
-                        <ElFormItem label="展示手机" prop="is_show_phone">
-                            <ElSwitch :active-value="1" :inactive-value="0" v-model="formCode.is_show_phone"/>
-                        </ElFormItem>
-                    </ElCol>
-                    <ElCol :xs="24" :md="8">
-                        <ElFormItem class="mb-0" label="展示主页" prop="is_show_homepage">
-                            <ElSwitch :active-value="1" :inactive-value="0" v-model="formCode.is_show_homepage"/>
-                        </ElFormItem>
-                    </ElCol>
-                </ElRow>
+                <div class="switch-bar">
+                    <span class="switch-item"><span>公开</span><ElSwitch :active-value="1" :inactive-value="0" v-model="formCode.is_public"/></span>
+                    <span class="switch-item"><span>手机</span><ElSwitch :active-value="1" :inactive-value="0" v-model="formCode.is_show_phone"/></span>
+                    <span class="switch-item"><span>主页</span><ElSwitch :active-value="1" :inactive-value="0" v-model="formCode.is_show_homepage"/></span>
+                    <span class="switch-item"><span>微信</span><ElSwitch :active-value="1" :inactive-value="0" v-model="formCode.is_show_wx"/></span>
+                    <span class="switch-item"><span>车辆</span><ElSwitch :active-value="1" :inactive-value="0" v-model="formCode.is_show_car"/></span>
+                    <span v-if="formCode.date_init" class="switch-meta">创建 {{ formCode.date_init }}</span>
+                </div>
 
-
-                <ElDivider content-position="left"><b>文字描述</b></ElDivider>
-                <ElRow>
-                    <ElCol :xs="24" :md="24">
+                <ElRow :gutter="16">
+                    <ElCol :span="12">
                         <ElFormItem label="挪车提示" prop="message">
-                            <ElInput type="textarea" :rows="4" placeholder="请输入内容" v-model="formCode.message"/>
+                            <ElInput
+                                type="textarea"
+                                :rows="3"
+                                v-model="formCode.message"
+                                placeholder="留空则使用：您好，如果车辆碍到您了，请联系我挪车"/>
+                        </ElFormItem>
+                        <ElFormItem label="简介" prop="description">
+                            <ElInput type="textarea" :rows="2" v-model="formCode.description" placeholder="二维码说明，可选"/>
                         </ElFormItem>
                     </ElCol>
-                    <ElCol :xs="24" :md="24">
-                        <ElFormItem label="">
-                            <p>如果不填写，内容默认为</p>
-                            <div class="text-success">
-                                <p>您好，<br>
-                                   如果车辆碍到您了，请联系我挪车</p>
-                            </div>
+                    <ElCol :span="12">
+                        <ElFormItem label="车辆名称" prop="car_name">
+                            <ElInput autocomplete="off" v-model="formCode.car_name" placeholder="如：白色帕萨特"/>
+                        </ElFormItem>
+                        <ElRow :gutter="12">
+                            <ElCol :span="12">
+                                <ElFormItem label="类别" prop="car_type">
+                                    <ElSelect v-model="formCode.car_type" style="width: 100%">
+                                        <ElOption label="汽车" :value="0"/>
+                                        <ElOption label="摩托车" :value="1"/>
+                                    </ElSelect>
+                                </ElFormItem>
+                            </ElCol>
+                            <ElCol :span="12">
+                                <ElFormItem label="车牌" prop="car_plate">
+                                    <ElInput autocomplete="off" v-model="formCode.car_plate" placeholder="车牌号"/>
+                                </ElFormItem>
+                            </ElCol>
+                        </ElRow>
+                        <ElFormItem label="车辆描述" prop="car_desc">
+                            <ElInput type="textarea" :rows="2" v-model="formCode.car_desc" placeholder="停车位置、颜色等"/>
                         </ElFormItem>
                     </ElCol>
                 </ElRow>
 
-                <ElDivider content-position="left"><b>二维码信息</b></ElDivider>
-                <ElRow>
-                    <ElCol :xs="24" :md="24">
-                        <ElFormItem label="展示微信" prop="is_show_wx">
-                            <ElSwitch :active-value="1" :inactive-value="0" v-model="formCode.is_show_wx"/>
-                        </ElFormItem>
-                    </ElCol>
-
-                    <ElCol :xs="24" :md="24">
-                        <ElFormItem label="微信二维码（正方形）">
+                <ElRow :gutter="16">
+                    <ElCol :span="8">
+                        <ElFormItem label="微信码">
                             <ElUpload
-                                action="files.kylebing.cn"
+                                action="#"
                                 list-type="picture-card"
+                                :limit="1"
                                 :before-upload="beforeUploadFile"
                                 :http-request="uploadFileWx"
-                                :file-list="wxCodeImgList">
+                                :file-list="wxCodeImgList"
+                                :on-remove="handleRemoveWx">
                                 <ElIcon><Upload/></ElIcon>
                             </ElUpload>
+                            <div class="upload-hint">正方形，一张</div>
                         </ElFormItem>
                     </ElCol>
-                </ElRow>
-
-                <ElDivider content-position="left"><b>车辆信息</b></ElDivider>
-                <ElRow>
-                    <ElCol :xs="24" :md="10">
-                        <ElFormItem label="车辆名称" prop="car_name">
-                            <ElInput autocomplete="off" v-model="formCode.car_name"></ElInput>
-                        </ElFormItem>
-                    </ElCol>
-
-                    <ElCol :xs="24" :md="7">
-                        <ElFormItem label="车辆类别" prop="car_type">
-                            <ElSelect v-model="formCode.car_type">
-                                <ElOption label="汽车" :value="0"></ElOption>
-                                <ElOption label="摩托车" :value="1"></ElOption>
-                            </ElSelect>
-                        </ElFormItem>
-                    </ElCol>
-                    <ElCol :xs="24" :md="7">
-                        <ElFormItem label="是否显示" prop="is_show_car">
-                            <ElSwitch :active-value="1" :inactive-value="0" v-model="formCode.is_show_car"/>
-                        </ElFormItem>
-                    </ElCol>
-                    <ElCol :xs="24" :md="24">
-                        <ElFormItem label="车牌号" prop="car_plate">
-                            <ElInput autocomplete="off" v-model="formCode.car_plate"></ElInput>
-                        </ElFormItem>
-                    </ElCol>
-
-                    <ElCol :xs="24" :md="24">
-                        <ElFormItem class="mb-0" label="车辆描述" prop="car_desc">
-                            <ElInput type="textarea" :rows="4" placeholder="请输入内容" v-model="formCode.car_desc"/>
-                        </ElFormItem>
-                    </ElCol>
-                </ElRow>
-
-                <ElRow>
-                    <ElCol :xs="24" :md="24">
-                        <ElFormItem label="首页图片" prop="is_show_car">
+                    <ElCol :span="16">
+                        <ElFormItem label="首页图">
                             <ElUpload
-                                action="files.kylebing.cn"
+                                action="#"
                                 list-type="picture-card"
                                 :before-upload="beforeUploadFile"
                                 :http-request="uploadFileImgs"
@@ -282,13 +253,12 @@
                         </ElFormItem>
                     </ElCol>
                 </ElRow>
-
             </ElForm>
-            <div slot="footer" class="dialog-footer">
-                <ElButton size="small" @click="clearForm" type="warning">清空</ElButton>
-                <ElButton size="small" @click="closeModal" icon="close">取 消</ElButton>
-                <ElButton size="small" type="primary" @click="submit" icon="check">{{ editingHash ? '修改' : '添加' }}</ElButton>
-            </div>
+            <template #footer>
+                <ElButton @click="clearForm" type="warning">清空</ElButton>
+                <ElButton @click="closeModal" icon="Close">取 消</ElButton>
+                <ElButton type="primary" @click="submit" icon="Check">{{ editingHash ? '修改' : '添加' }}</ElButton>
+            </template>
         </ElDialog>
 
     </Container>
@@ -442,10 +412,21 @@ function handleRemove(file: any, fileList: any[]) {
     currentImgList.value = fileList
 }
 
+function handleRemoveWx() {
+    formCode.value.wx_code_img = ''
+    wxCodeImgList.value = []
+}
+
+function fillRandomHash() {
+    // 新建时生成短 hash，避免手填
+    formCode.value.hash = Math.random().toString(36).slice(2, 10)
+}
+
 function addNewCode() {
-    modalEdit.value = true
     editingHash.value = null
     clearForm()
+    fillRandomHash()
+    modalEdit.value = true
 }
 
 function clearForm() {
@@ -474,13 +455,20 @@ function clearForm() {
 }
 
 function closeModal(done?: () => void) {
-    ElMessageBox.confirm('确认关闭？')
-        .then(() => {
-            editingHash.value = null
-            modalEdit.value = false
-            if (done) done()
-        })
-        .catch(() => {})
+    // 二维码字段多，关闭前确认，避免误关丢失未保存内容
+    ElMessageBox.confirm('确认关闭？', '关闭', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+    }).then(() => {
+        editingHash.value = null
+        modalEdit.value = false
+        if (done) done()
+    }).catch(() => {})
+}
+
+function onDialogClosed() {
+    editingHash.value = null
 }
 
 function clearVisitCount() {
@@ -619,5 +607,56 @@ onMounted(() => {
     overflow: hidden;
     text-overflow: ellipsis;
     cursor: pointer;
+}
+
+.qr-dialog {
+    :deep(.el-dialog__body) {
+        max-height: calc(100vh - 160px);
+        overflow-y: auto;
+        padding-top: 12px;
+        padding-bottom: 8px;
+    }
+}
+
+.qr-form {
+    :deep(.el-form-item) {
+        margin-bottom: 16px;
+    }
+    :deep(.el-upload--picture-card),
+    :deep(.el-upload-list--picture-card .el-upload-list__item) {
+        width: 112px;
+        height: 112px;
+    }
+}
+
+.switch-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px 20px;
+    margin: 0 0 16px 88px;
+    padding: 10px 14px;
+    background: var(--el-fill-color-light);
+    border-radius: 8px;
+}
+
+.switch-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--el-text-color-regular);
+}
+
+.switch-meta {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+}
+
+.upload-hint {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
 }
 </style>

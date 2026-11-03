@@ -23,6 +23,11 @@
             <template #right>
                 <ElButton icon="Plus" type="success" @click="addNewImage">添加</ElButton>
                 <ElButton
+                    icon="Close"
+                    :disabled="selectedRows.length === 0"
+                    @click="clearSelection"
+                >清选</ElButton>
+                <ElButton
                     icon="Delete"
                     type="danger"
                     :disabled="selectedRows.length === 0"
@@ -57,8 +62,9 @@
                 <div v-for="item in tableData" 
                      :key="item.id" 
                      class="image-card"
-                     :class="{ 'selected': selectedRows.includes(item) }"
-                     @click="toggleSelection(item)">
+                     :class="{ 'selected': selectedRows.some(row => row.id === item.id) }"
+                     @mousedown="onCardMouseDown"
+                     @click="toggleSelection(item, $event)">
                     <div v-if="getSelectionOrder(item.id) > 0" class="selection-order-badge">
                         {{ getSelectionOrder(item.id) }}
                     </div>
@@ -119,7 +125,7 @@
                     <img :src="getSafeImageUrl(editForm.id, ImageResolutions.THUMBNAIL_200.name)" alt="preview">
                 </div>
                 <div class="edit-form-container">
-                    <ElForm size="small" label-width="80px">
+                    <ElForm label-width="80px">
                         <ElFormItem label="图片描述">
                             <ElInput type="text" v-model="editForm.description"></ElInput>
                         </ElFormItem>
@@ -137,7 +143,7 @@
             v-model="isShowingModalUpload"
             width="600px"
             center>
-            <ElForm size="small" label-width="80px">
+            <ElForm label-width="80px">
                 <ElFormItem label="选择文件">
                     <input type="file" ref="inputUpload" @change="inputFileChange" multiple accept="image/*"/>
                 </ElFormItem>
@@ -249,6 +255,7 @@ function pageNoChange(pageNo: number){
 const previewUrls = ref<{ [key: string]: string }>({});
 
 const selectedRows = ref<TableData[]>([]);
+const lastAnchorIndex = ref(-1);
 const copyAsMarkdown = ref(false);
 
 const copyOptions = computed(() => {
@@ -305,7 +312,28 @@ const handleSelectionChange = (selection: TableData[]) => {
     selectedRows.value = selection;
 };
 
-const toggleSelection = (item: TableData) => {
+function onCardMouseDown(event: MouseEvent) {
+    // Shift 框选时避免连带选中文字
+    if (event.shiftKey) event.preventDefault();
+}
+
+function clearSelection() {
+    selectedRows.value = [];
+    lastAnchorIndex.value = -1;
+}
+
+const toggleSelection = (item: TableData, event?: MouseEvent) => {
+    const currentIndex = tableData.value.findIndex(row => row.id === item.id);
+    if (currentIndex < 0) return;
+
+    if (event?.shiftKey && lastAnchorIndex.value >= 0) {
+        const start = Math.min(lastAnchorIndex.value, currentIndex);
+        const end = Math.max(lastAnchorIndex.value, currentIndex);
+        selectedRows.value = tableData.value.slice(start, end + 1);
+        return;
+    }
+
+    lastAnchorIndex.value = currentIndex;
     const index = selectedRows.value.findIndex(row => row.id === item.id);
     if (index === -1) {
         selectedRows.value.push(item);
@@ -337,6 +365,8 @@ const getFileList = () => {
             isLoading.value = false;
             tableData.value = res.data.list;
             pager.value.total = res.data.pager.total;
+            selectedRows.value = [];
+            lastAnchorIndex.value = -1;
         })
         .catch(() => {
             isLoading.value = false;
@@ -757,6 +787,7 @@ const submitEdit = () => {
     .image-card {
         width: 160px;
         cursor: pointer;
+        user-select: none;
         border: 1px solid #dcdfe6;
         border-radius: 4px;
         overflow: hidden;

@@ -9,7 +9,8 @@ interface AuthorizationData {
     token: string,
     group_id: string,
     city: string,
-    geolocation: string
+    geolocation: string,
+    role_name?: string
 }
 
 const AUTHORIZATION_NAME = 'Authorization' // 存储用户信息的 localStorage name，跟 Diary 通用

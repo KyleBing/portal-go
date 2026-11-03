@@ -82,49 +82,50 @@ $height-nav: 40px;
 .nav-list {
     overflow-x: auto;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     padding: math.div(($height-nav - 30), 2);
+}
 
-    .nav-list-item {
-        flex-shrink: 0;
-        letter-spacing: 1px;
-        user-select: none;
-        cursor: pointer;
-        font-weight: bold;
-        @include border-radius(8px);
-        padding: 0 10px;
-        margin-right: 5px;
-        font-size: $fz-navbar;
-        line-height: 38px;
+.nav-list-item {
+    flex-shrink: 0;
+    letter-spacing: 1px;
+    user-select: none;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 80px;
+    padding: 0 10px;
+    margin-right: 5px;
+    min-width: 100px;
+    text-align: center;
+    font-size: $fz-navbar;
+    line-height: 38px;
+    @extend .btn-like;
+    text-shadow: 1px 1px 1px color.adjust(black, $alpha: -0.8);
+    position: relative;
 
-        &:active {
-            @include transform(translateY(2px));
-        }
-        text-shadow: 1px 1px 1px color.adjust(black, $alpha: -0.8);
-        position: relative;
+    .badge-custom{
+        @include box-shadow(1px 1px 1px color.adjust(black, $alpha: -0.7));
+        padding: 2px 6px;
+        line-height: 1;
+        position: absolute;
+        top: -5px;
+        right: -4px;
+        font-size: $fz-small;
+        color: white;
+        background-color: $red;
+        @include border-radius(20px);
+        border: 1px solid color.adjust(white, $alpha: -0.5);
+    }
 
-        .badge-custom{
-            @include box-shadow(1px 1px 1px color.adjust(black, $alpha: -0.7));
-            padding: 2px 6px;
-            line-height: 1;
-            position: absolute;
-            top: -5px;
-            right: -4px;
-            font-size: $fz-small;
-            color: white;
-            background-color: $red;
-            @include border-radius(20px);
-            border: 1px solid color.adjust(white, $alpha: -0.5);
-        }
+    &:hover:not(.active) {
+        color: white;
+        background-color: color-mix(in srgb, $theme-top-navbar-active 50%, transparent);
+    }
 
-        &:hover:not(.active) {
-            background-color: color-mix(in srgb, $theme-top-navbar-active 50%, transparent);
-        }
-
-        &.active {
-            background-color: $theme-top-navbar-active;
-            color: white;
-        }
+    &.active {
+        background-color: $theme-top-navbar-active;
+        color: white;
+        text-shadow: none;
     }
 }
 

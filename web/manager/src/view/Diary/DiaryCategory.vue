@@ -50,7 +50,6 @@
             <ElForm
                 label-position="right"
                 label-width="120px"
-                size="small"
                 :model="formCategory"
                 :rules="categoryRules"
                 ref="categoryModify">
@@ -80,15 +79,15 @@
             </ElForm>
             <template #footer>
                 <div class="dialog-footer">
-                    <ElButton size="small" @click="clearForm" type="warning">
+                    <ElButton @click="clearForm" type="warning">
                         <ElIcon><Delete /></ElIcon>
                         清空
                     </ElButton>
-                    <ElButton size="small" @click="closeModal">
+                    <ElButton @click="closeModal">
                         <ElIcon><Close /></ElIcon>
                         取 消
                     </ElButton>
-                    <ElButton size="small" type="primary" @click="submit">
+                    <ElButton type="primary" @click="submit">
                         <ElIcon><Check /></ElIcon>
                         {{ editingCategory ? ' 修改' : ' 添加' }}
                     </ElButton>

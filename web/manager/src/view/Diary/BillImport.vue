@@ -2,7 +2,7 @@
     <Container>
         <Toolbar>
             <template #left>
-                <ElRadioGroup v-model="activeTab" size="small">
+                <ElRadioGroup v-model="activeTab">
                     <ElRadioButton value="preview">上传与预览</ElRadioButton>
                     <ElRadioButton value="aliases">别名管理</ElRadioButton>
                     <ElRadioButton value="batches">导入记录</ElRadioButton>

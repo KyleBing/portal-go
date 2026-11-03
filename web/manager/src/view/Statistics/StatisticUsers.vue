@@ -48,9 +48,6 @@
             </ElTable>
         </StatisticPanel>
 
-        <StatisticPanel title="用户日记数量" v-if="diaryChart.length">
-            <ChartBar title="" :data="diaryChart"/>
-        </StatisticPanel>
     </div>
 </template>
 
@@ -60,7 +57,6 @@ import dayjs from 'dayjs'
 import statisticApi from '@/api/statisticApi'
 import { getAuthorization } from '@/utility'
 import StatisticPanel from '@/view/Statistics/StatisticPanel.vue'
-import ChartBar from '@/components/charts/ChartBar.vue'
 
 interface UserStat {
     uid: number
@@ -72,17 +68,11 @@ interface UserStat {
     sync_count: number
 }
 
-interface ChartItem {
-    name: string
-    value: number
-}
-
 const auth = getAuthorization()
 const isAdmin = computed(() => Number(auth?.group_id) === 1)
 
 const diaryUsers = ref<UserStat[]>([])
 const mapRouteUsers = ref<UserStat[]>([])
-const diaryChart = ref<ChartItem[]>([])
 
 function formatDay(v: string | null | undefined) {
     if (!v) return '-'
@@ -103,14 +93,9 @@ function load() {
         const data = res?.data || {}
         diaryUsers.value = data.diary_users || []
         mapRouteUsers.value = data.map_route_users || []
-        diaryChart.value = (data.diary_chart || []).map((item: ChartItem) => ({
-            name: item.name,
-            value: Number(item.value) || 0,
-        }))
     }).catch(() => {
         diaryUsers.value = []
         mapRouteUsers.value = []
-        diaryChart.value = []
     })
 }
 

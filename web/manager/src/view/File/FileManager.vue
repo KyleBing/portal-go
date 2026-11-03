@@ -20,7 +20,7 @@
             <ElTable
                 class="table-narrow"
                 size="small"
-                :height="projectStore.contentInsets.heightContent - 130"
+                :height="projectStore.contentInsets.heightContent - projectStore.contentInsets.heightToolbar - projectStore.contentInsets.heightPagination"
                 stripe
                 :data="tableData"
                 v-loading="isLoading"

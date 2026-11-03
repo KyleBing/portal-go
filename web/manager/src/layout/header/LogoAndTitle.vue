@@ -7,8 +7,8 @@
 
 <script setup lang="ts">
 import {useProjectStore} from "@/pinia";
+import logo from "@/assets/logo.png"
 const projectStore = useProjectStore()
-import logo from "@/assets/logo-white.png"
 
 </script>
 
@@ -18,8 +18,6 @@ import logo from "@/assets/logo-white.png"
 @use "../../assets/scss/font" as *;
 
 .logo {
-    margin-left: 10px;
-    padding: 10px;
     img {
         display: block;
         height: 32px;
@@ -28,7 +26,7 @@ import logo from "@/assets/logo-white.png"
 .title{
     letter-spacing: 1px;
     white-space: nowrap;
-    color: white;
+    color: $text-main;
     margin-left: 10px;
     font-size: 22px;
 }

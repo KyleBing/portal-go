@@ -2,12 +2,9 @@
     <div class="header">
         <div class="header-left">
             <LogoAndTitle/>
-        </div>
-        <div class="header-center" v-if="!isRegisterMode">
-            <TopNavbar :ticketTotal="systemStatisticInfo.ticket_total"/>
+            <TopNavbar class="ml-5" v-if="!isRegisterMode" :ticketTotal="systemStatisticInfo.ticket_total"/>
         </div>
         <div class="header-right">
-            <Clock/>
             <Profile v-if="!isRegisterMode"/>
         </div>
     </div>
@@ -17,7 +14,6 @@
 import Profile from "../Profile.vue";
 import {onMounted, onUnmounted, ref} from "vue";
 import TopNavbar from "@/layout/header/TopNavbar.vue";
-import Clock from "@/layout/header/Clock.vue";
 import LogoAndTitle from "@/layout/header/LogoAndTitle.vue";
 
 interface SystemStatisticInfo {
@@ -27,7 +23,7 @@ interface SystemStatisticInfo {
     ticket_total: number;
 }
 
-const props = defineProps<{
+defineProps<{
     isRegisterMode?: boolean;
 }>();
 
@@ -57,20 +53,21 @@ const systemStatisticInfo = ref<SystemStatisticInfo>({
 @use '../../assets/scss/plugin' as *;
 
 .header {
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 12px;
+    height: 100%;
     padding: 0 20px;
-    background: linear-gradient(to right, $theme-bg-header-start, $theme-bg-header-end);
+    background: linear-gradient(to bottom, $theme-bg-header-start, $theme-bg-header-end);
     display: flex;
     font-size: 1.3rem;
     flex-flow: row nowrap;
     align-items: center;
     line-height: 60px;
-    color: color.adjust(white, $alpha: -0.1);
-    border-bottom: 1px solid $theme-border-light;
+    color: $text-main;
+    border-bottom: 1px solid $theme-border-card;
 }
 
 .header-left,
-.header-center,
 .header-right {
     display: flex;
     flex-flow: row nowrap;
@@ -78,15 +75,15 @@ const systemStatisticInfo = ref<SystemStatisticInfo>({
 }
 
 .header-left {
+    flex: 1;
+    min-width: 0;
     justify-content: flex-start;
-}
-
-.header-center {
-    justify-content: flex-start;
+    gap: 8px;
 }
 
 .header-right {
-    padding-right: 20px;
+    flex-shrink: 0;
+    margin-left: auto;
     gap: 5px;
 }
 </style>

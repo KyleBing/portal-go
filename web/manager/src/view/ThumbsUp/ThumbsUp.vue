@@ -41,39 +41,38 @@
             <ElForm
                 label-position="right"
                 label-width="120px"
-                size="small"
                 :model="formThumbsUp"
                 :rules="thumbsUpRules"
                 ref="thumbsUpModify">
                 <ElRow>
                     <ElCol>
                         <ElFormItem label="标识名" prop="name">
-                            <ElInput autocomplete="off" :disabled="!isAdmin" v-model="formThumbsUp.name"></ElInput>
+                            <ElInput autocomplete="off" v-model="formThumbsUp.name"></ElInput>
                         </ElFormItem>
                     </ElCol>
                     <ElCol>
                         <ElFormItem label="点赞数量" prop="count">
-                            <ElInput autocomplete="off" :disabled="!isAdmin" v-model="formThumbsUp.count"></ElInput>
+                            <ElInputNumber v-model="formThumbsUp.count" :min="0" :controls="false" style="width: 100%"/>
                         </ElFormItem>
                     </ElCol>
                     <ElCol>
                         <ElFormItem label="说明" prop="description">
-                            <ElInput autocomplete="off" :disabled="!isAdmin" v-model="formThumbsUp.description"></ElInput>
+                            <ElInput autocomplete="off" v-model="formThumbsUp.description"></ElInput>
                         </ElFormItem>
                     </ElCol>
                     <ElCol>
                         <ElFormItem label="网址" prop="link_address">
-                            <ElInput autocomplete="off" :disabled="!isAdmin" v-model="formThumbsUp.link_address"></ElInput>
+                            <ElInput autocomplete="off" v-model="formThumbsUp.link_address"></ElInput>
                         </ElFormItem>
                     </ElCol>
                 </ElRow>
 
             </ElForm>
-            <div slot="footer" class="dialog-footer">
-                <ElButton size="small" @click="clearForm" type="warning">清空</ElButton>
-                <ElButton size="small" @click="closeModal" icon="close">取 消</ElButton>
-                <ElButton size="small" type="primary" @click="submit" icon="check">{{ editingThumbsUp ? '修改' : '添加' }}</ElButton>
-            </div>
+            <template #footer>
+                <ElButton @click="clearForm" type="warning">清空</ElButton>
+                <ElButton @click="closeModal" icon="close">取 消</ElButton>
+                <ElButton type="primary" @click="submit" icon="check">{{ editingThumbsUp ? '修改' : '添加' }}</ElButton>
+            </template>
         </ElDialog>
 
     </Container>
@@ -101,7 +100,6 @@ const thumbsUpList = ref<ThumbsUp[]>([])
 const editingThumbsUp = ref<string | null>(null)
 const modalEdit = ref(false)
 const thumbsUpModify = ref<FormInstance>()
-const isAdmin = ref(false)
 
 const formThumbsUp = ref<ThumbsUp>({
     name: '',
@@ -118,7 +116,7 @@ const thumbsUpRules = {
     link_address: { required: true, message: '请填写站点地址', trigger: 'blur' }
 }
 
-const modalTitle = computed(() => editingThumbsUp.value ? '编辑类别' : '新增类别')
+const modalTitle = computed(() => editingThumbsUp.value ? '编辑点赞' : '新增点赞')
 
 function addNewDiaryThumbsUp() {
     modalEdit.value = true
@@ -137,13 +135,9 @@ function clearForm() {
 }
 
 function closeModal(done?: () => void) {
-    ElMessageBox.confirm('确认关闭？')
-        .then(() => {
-            editingThumbsUp.value = null
-            modalEdit.value = false
-            if (done) done()
-        })
-        .catch(() => {})
+    editingThumbsUp.value = null
+    modalEdit.value = false
+    if (done) done()
 }
 
 function getThumbsUpList() {
@@ -154,9 +148,9 @@ function getThumbsUpList() {
     }
     thumbsUpApi
         .list(params)
-        .then(res => {
+        .then((res: any) => {
             isLoading.value = false
-            thumbsUpList.value = res.data
+            thumbsUpList.value = Array.isArray(res.data) ? res.data : []
         })
         .catch(err => {
             isLoading.value = false
@@ -165,12 +159,12 @@ function getThumbsUpList() {
 
 function goEdit(thumbsUp: ThumbsUp) {
     editingThumbsUp.value = thumbsUp.name
-    formThumbsUp.value = thumbsUp
+    formThumbsUp.value = { ...thumbsUp, count: Number(thumbsUp.count) || 0 }
     modalEdit.value = true
 }
 
 function goDelete(thumbsUp: ThumbsUp) {
-    ElMessageBox.confirm(`删除类别 ${thumbsUp.name}(${thumbsUp.name})`, '删除', {
+    ElMessageBox.confirm(`删除点赞 ${thumbsUp.name}`, '删除', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
@@ -207,8 +201,11 @@ function submit() {
 
 function thumbsUpNewSubmit() {
     thumbsUpApi
-        .add(formThumbsUp.value)
-        .then(res => {
+        .add({
+            ...formThumbsUp.value,
+            count: Number(formThumbsUp.value.count) || 0,
+        })
+        .then((res: any) => {
             ElMessage({
                 message: res.message,
                 type: 'success'
@@ -221,8 +218,12 @@ function thumbsUpNewSubmit() {
 
 function thumbsUpModifySubmit() {
     thumbsUpApi
-        .modify(formThumbsUp.value)
-        .then(res => {
+        .modify({
+            ...formThumbsUp.value,
+            count: Number(formThumbsUp.value.count) || 0,
+            origin_name: editingThumbsUp.value || formThumbsUp.value.name,
+        })
+        .then((res: any) => {
             ElMessage({
                 message: res.message,
                 type: 'success'
@@ -235,7 +236,6 @@ function thumbsUpModifySubmit() {
 
 onMounted(() => {
     getThumbsUpList()
-    isAdmin.value = localStorage.getItem('email') === 'kylebing@163.com'
 })
 </script>
 

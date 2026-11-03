@@ -2,7 +2,7 @@
     <Container>
         <Toolbar>
             <template #left>
-                <ElForm size="small" inline>
+                <ElForm inline>
                     <ElFormItem label="搜索">
                         <ElInput 
                             clearable 
@@ -29,7 +29,7 @@
                     <ElTable
                         class="table-narrow"
                         size="small"
-                        :height="projectStore.contentInsets.heightContent - 130"
+                        :height="projectStore.contentInsets.heightContent - projectStore.contentInsets.heightToolbar - projectStore.contentInsets.heightPagination"
                         stripe
                         :data="filteredData"
                         v-loading="isLoading"
@@ -50,12 +50,12 @@
                     </ElTable>
                 </ElCol>
             </ElRow>
-            <FooterPagination
-                :pager-option="pager"
-                @size-change="sizeChange"
-                @pager-change="pagerChange"
-            />
         </Content>
+        <FooterPagination
+            :pager-option="pager"
+            @size-change="sizeChange"
+            @pager-change="pagerChange"
+        />
 
         <!-- 编辑窗口-->
         <ElDialog
@@ -66,7 +66,6 @@
             <ElForm
                 :model="formLog"
                 :rules="logRules"
-                size="small"
                 ref="formRef" label-width="100px">
                 <ElFormItem label="日期" prop="date">
                     <ElDatePicker
@@ -83,9 +82,9 @@
                 </ElFormItem>
             </ElForm>
             <div slot="footer" class="dialog-footer">
-                <ElButton size="small" @click="clearForm" type="warning" icon="RefreshLeft">清空</ElButton>
-                <ElButton size="small" @click="closeModal" icon="Close">取 消</ElButton>
-                <ElButton size="small" type="primary" @click="submit" icon="Check">确定</ElButton>
+                <ElButton @click="clearForm" type="warning" icon="RefreshLeft">清空</ElButton>
+                <ElButton @click="closeModal" icon="Close">取 消</ElButton>
+                <ElButton type="primary" @click="submit" icon="Check">确定</ElButton>
             </div>
         </ElDialog>
     </Container>
@@ -157,13 +156,9 @@ function clearForm() {
 }
 
 function closeModal(done?: () => void) {
-    ElMessageBox.confirm('确认关闭？')
-        .then(() => {
-            editingId.value = null
-            modalEdit.value = false
-            if (done) done()
-        })
-        .catch(() => {})
+    editingId.value = null
+    modalEdit.value = false
+    if (done) done()
 }
 
 function getLogList() {

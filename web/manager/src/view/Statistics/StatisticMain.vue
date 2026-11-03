@@ -1,9 +1,6 @@
 <template>
     <Container>
         <Content>
-            <div v-if="isAdmin" class="card-charts">
-                <StatisticUserDiaryCount/>
-            </div>
             <div class="card-cards">
                 <template v-for="item in statistics" :key="item.name">
                     <statistic-count-card
@@ -20,14 +17,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, defineAsyncComponent } from 'vue';
+import { ref, onMounted, defineAsyncComponent } from 'vue';
 import statisticApi from "@/api/statisticApi";
 import { getAuthorization } from "@/utility";
 import StatisticCountCard from "@/view/Statistics/StatisticCountCard.vue";
 import Container from "@/layout/Container.vue";
 import Content from "@/layout/Content.vue";
 
-const StatisticUserDiaryCount = defineAsyncComponent(() => import("@/view/Statistics/StatisticUserDiaryCount.vue"));
 const StatisticUsers = defineAsyncComponent(() => import("@/view/Statistics/StatisticUsers.vue"));
 
 interface StatisticItem {
@@ -55,7 +51,6 @@ const COLORS = {
 };
 
 const userInfo = ref(getAuthorization());
-const isAdmin = computed(() => Number(userInfo.value?.group_id) === 1);
 const statistics = ref<StatisticItem[]>([]);
 const nameMap = ref(new Map<string, NameMapItem>([
     ["count_bill", {userPermission: [1, 2], name: '账单', icon: 'CreditCard', color: COLORS.green}],
@@ -94,11 +89,6 @@ onMounted(() => {
 .card-cards {
     display: flex;
     flex-flow: row wrap;
-    justify-content: flex-start;
-}
-
-.card-charts {
-    display: flex;
     justify-content: flex-start;
 }
 </style>

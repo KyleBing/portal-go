@@ -17,7 +17,7 @@
                     <ElTable
                         class="table-narrow"
                         size="small"
-                        :height="projectStore.contentInsets.heightContent - 130"
+                        :height="projectStore.contentInsets.heightContent - projectStore.contentInsets.heightToolbar - projectStore.contentInsets.heightPagination"
                         stripe
                         :data="tableData"
                         v-loading="isLoading"
@@ -78,12 +78,11 @@
         <ElDialog
             :title="modalTitle"
             v-model="modalEdit"
-            width="30%"
+            width="520px"
             :before-close="closeModal">
             <ElForm
                 :model="formUser"
                 :rules="userRules"
-                size="small"
                 ref="register" label-width="100px">
                 <ElFormItem label="邮箱" prop="email">
                     <ElInput :disabled="!isAdmin" autocomplete="off" v-model="formUser.email"/>
@@ -114,13 +113,13 @@
                     <ElInput autocomplete="off" v-model="formUser.homepage"/>
                 </ElFormItem>
             </ElForm>
-            <div slot="footer" class="dialog-footer">
-                <ElButton size="small" @click="clearForm" type="warning">清空</ElButton>
-                <ElButton size="small" @click="closeModal">取 消</ElButton>
-                <ElButton size="small" type="primary" @click="submit">{{ editingUid ? '修改' : '添加' }}</ElButton>
-            </div>
+            <template #footer>
+                <ElButton @click="clearForm" type="warning">清空</ElButton>
+                <ElButton @click="closeModal">取 消</ElButton>
+                <ElButton type="primary" @click="submit">{{ editingUid ? '修改' : '添加' }}</ElButton>
+            </template>
         </ElDialog>
-    </Container>>
+    </Container>
 </template>
 
 <script setup lang="ts">
@@ -249,13 +248,9 @@ function clearForm() {
 }
 
 function closeModal(done?: () => void) {
-    ElMessageBox.confirm('确认关闭？')
-        .then(() => {
-            editingUid.value = null
-            modalEdit.value = false
-            if (done) done()
-        })
-        .catch(() => {})
+    editingUid.value = null
+    modalEdit.value = false
+    if (done) done()
 }
 
 function pageSizeChange(pageSize: number){

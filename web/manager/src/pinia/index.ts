@@ -26,7 +26,7 @@ export const useProjectStore = defineStore('projectStore', {
 
         tableSize: 'small' as 'small' | 'default' | 'large',
         navMenuIsClosed: false, // navMenu 是否折叠状态
-        projectName: '我的后台',
+        projectName: '日记后台',
 
         username: '',
         userInfo: {}, // 用户信息,

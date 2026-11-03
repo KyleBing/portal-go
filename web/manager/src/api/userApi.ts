@@ -31,8 +31,7 @@ interface RegisterRequest {
 }
 
 interface ChangePasswordRequest {
-    oldPassword: string;
-    newPassword: string;
+    password: string;
 }
 
 interface UserResponse {
@@ -55,6 +54,8 @@ export default {
     detail(params: { id: number }): Promise<UserResponse> {return request('get', params, null, false, '/user/detail')},
     list(requestData: UserListRequest): Promise<{ list: UserResponse[], pager: { total: number, pageNo: number, pageSize: number } }> {return request('post', null, requestData, false, '/user/list')},
     changePassword(requestData: ChangePasswordRequest): Promise<{ message: string }> {return request('put', null, requestData, false, '/user/change-password')},
+    // 注销账号：删除该用户在数据库中的全部数据，不可恢复
+    destroyAccount(): Promise<{ message: string }> {return request('delete', null, null, false, '/user/destroy-account')},
     // 找回密码 / 重发验证
     forgot(requestData: { email: string }): Promise<{ message: string }> {return request('post', null, requestData, false, '/user/forgot')},
     resendVerify(requestData: { email: string }): Promise<{ message: string }> {return request('post', null, requestData, false, '/user/resend-verify')},

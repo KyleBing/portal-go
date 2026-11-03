@@ -1,13 +1,5 @@
 <template>
     <nav>
-        <ElButton :round="false"
-                  class="collapse-btn"
-                  @click="store.toggleNavMenu()"
-                  :style="`width: ${store.navWidth}px;`"
-        >
-            {{ store.navMenuIsClosed ? '展开' : '折叠' }}
-        </ElButton>
-
         <ElMenu
             v-if="projectStore.leftMenuList"
             @select="handleMenu"
@@ -36,9 +28,9 @@
                         v-for="menuItem in menuGroup.children.filter(item => item.meta?.isShowInMenu)" :key="menuItem.path"
                         :class="{'is-active': menuItem.name === route.name}"
                     >
-                        <!--                        <ElIcon v-if="menuItem.meta && menuItem.meta.icon">-->
-                        <!--                            <component :is="menuItem.meta.icon"/>-->
-                        <!--                        </ElIcon>-->
+                        <ElIcon v-if="menuItem.meta && menuItem.meta.icon">
+                            <component :is="menuItem.meta.icon"/>
+                        </ElIcon>
                         {{ menuItem.meta.title }}
                     </ElMenuItem>
                 </ElSubMenu>
