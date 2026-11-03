@@ -51,6 +51,7 @@ function request(
         'user/resend-verify',
         'user/reset',
         'registration-application/submit',
+        'registration-application/check-email',
         'system-config',
         'setup/status',
     ])

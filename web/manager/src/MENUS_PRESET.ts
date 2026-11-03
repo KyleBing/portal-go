@@ -52,6 +52,67 @@ const MENUS_PRESET: Array<EntityMenu> = [
         ]
     },
     {
+        "name": "用户",
+        "type": EnumMenuType['目录'],
+        "path": "/user",
+        "match_path": "",
+        "component": "",
+        "visible": EnumMenuVisible['可见'],
+        "redirect": "/user/list",
+        "icon": "User",
+        "isNeedAdminPermission": false,
+        "children": [
+            {
+                "name": "用户管理",
+                "type": EnumMenuType['菜单'],
+                "path": "/user/list",
+                "match_path": "",
+                "component": "User/User.vue",
+                "visible": EnumMenuVisible['可见'],
+                "redirect": "",
+                "icon": "User",
+                "isNeedAdminPermission": false,
+                "children": []
+            },
+            {
+                "name": "注册审核",
+                "type": EnumMenuType['菜单'],
+                "path": "/user/registration-applications",
+                "match_path": "",
+                "component": "User/RegistrationApplicationList.vue",
+                "visible": EnumMenuVisible['可见'],
+                "redirect": "",
+                "icon": "Notebook",
+                "isNeedAdminPermission": true,
+                "children": []
+            },
+            {
+                "name": "申请收款码",
+                "type": EnumMenuType['菜单'],
+                "path": "/user/registration-pay-qr",
+                "match_path": "",
+                "component": "System/RegistrationPayQrList.vue",
+                "visible": EnumMenuVisible['可见'],
+                "redirect": "",
+                "icon": "PriceTag",
+                "isNeedAdminPermission": true,
+                "children": []
+            },
+            {
+                "name": "邀请码",
+                "type": EnumMenuType['菜单'],
+                "path": "/user/invitation",
+                "match_path": "",
+                "component": "Diary/InvitationList.vue",
+                "visible": EnumMenuVisible['可见'],
+                "redirect": "",
+                "icon": "Ticket",
+                "isNeedAdminPermission": true,
+                "children": []
+            }
+        ]
+    },
+    {
         "name": "二维码",
         "type": EnumMenuType['目录'],
         "path": "/qr",
@@ -318,42 +379,6 @@ const MENUS_PRESET: Array<EntityMenu> = [
         "icon": "Setting",
         "isNeedAdminPermission": false,
         "children": [
-            {
-                "name": "用户管理",
-                "type": EnumMenuType['菜单'],
-                "path": "/system/permission-setup/user-list",
-                "match_path": "",
-                "component": "User/User.vue",
-                "visible": EnumMenuVisible['可见'],
-                "redirect": "",
-                "icon": "User",
-                "isNeedAdminPermission": false,
-                "children": []
-            },
-            {
-                "name": "注册审核",
-                "type": EnumMenuType['菜单'],
-                "path": "/system/registration-applications",
-                "match_path": "",
-                "component": "User/RegistrationApplicationList.vue",
-                "visible": EnumMenuVisible['可见'],
-                "redirect": "",
-                "icon": "Notebook",
-                "isNeedAdminPermission": true,
-                "children": []
-            },
-            {
-                "name": "邀请码",
-                "type": EnumMenuType['菜单'],
-                "path": "/system/invitation",
-                "match_path": "",
-                "component": "Diary/InvitationList.vue",
-                "visible": EnumMenuVisible['可见'],
-                "redirect": "",
-                "icon": "Ticket",
-                "isNeedAdminPermission": true,
-                "children": []
-            },
             {
                 "name": "系统配置",
                 "type": EnumMenuType['菜单'],

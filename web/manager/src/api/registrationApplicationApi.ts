@@ -24,6 +24,9 @@ const registrationApplicationApi = {
     submit(data: { email: string; paidAccount: string; payPlatform: PayPlatform }) {
         return request('post', null, data, false, 'registration-application/submit')
     },
+    checkEmail(email: string) {
+        return request('get', { email }, null, false, 'registration-application/check-email')
+    },
     manage(params: { status?: ApplicationStatus; pageNo?: number; pageSize?: number } = {}) {
         return request('get', params, null, false, 'registration-application/manage')
     },

@@ -2,6 +2,7 @@ bin/
 bin/linux/
 upload/*
 !upload/.gitkeep
+data/pay-qr/
 temp/*
 !temp/.gitkeep
 tmp/

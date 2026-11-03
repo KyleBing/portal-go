@@ -23,6 +23,7 @@ const inviteTable = "invitations"
 // Register 挂载 /registration-application 路由。
 func Register(r *gin.RouterGroup) {
 	g := r
+	g.GET("/check-email", handleCheckEmail)
 	g.POST("/submit", handleSubmit)
 	g.GET("/manage", handleManage)
 	g.GET("/detail", handleDetail)
@@ -32,6 +33,62 @@ func Register(r *gin.RouterGroup) {
 }
 
 func diaryDB() (*sql.DB, error) { return db.Open(db.Diary) }
+
+type emailAvailability struct {
+	available  bool
+	registered bool
+	pending    bool
+	message    string
+}
+
+// lookupEmailAvailability 申请前检查：是否已注册、是否已有待审核申请。
+func lookupEmailAvailability(diary *sql.DB, email string) (emailAvailability, error) {
+	out := emailAvailability{available: true, message: "该邮箱可以申请注册"}
+	var existingUID int64
+	err := diary.QueryRow(`SELECT uid FROM users WHERE LOWER(email) = ? LIMIT 1`, email).Scan(&existingUID)
+	if err == nil {
+		out.available = false
+		out.registered = true
+		out.message = "该邮箱已注册，请直接登录。如忘记密码，可在登录页找回"
+		return out, nil
+	}
+	if err != sql.ErrNoRows {
+		return out, err
+	}
+	var pending int
+	if err := diary.QueryRow(`SELECT COUNT(1) FROM `+table+` WHERE LOWER(email) = ? AND status = 'pending'`, email).Scan(&pending); err != nil {
+		return out, err
+	}
+	if pending > 0 {
+		out.available = false
+		out.pending = true
+		out.message = "该邮箱已有待审核申请，请耐心等待邮件通知"
+	}
+	return out, nil
+}
+
+func handleCheckEmail(c *gin.Context) {
+	email := strings.TrimSpace(strings.ToLower(c.Query("email")))
+	if email == "" || !strings.Contains(email, "@") {
+		response.Error(c, "", "请填写有效邮箱")
+		return
+	}
+	diary, err := diaryDB()
+	if err != nil {
+		response.Error(c, err.Error(), "检查失败")
+		return
+	}
+	info, err := lookupEmailAvailability(diary, email)
+	if err != nil {
+		response.Error(c, err.Error(), "检查失败")
+		return
+	}
+	response.Success(c, gin.H{
+		"available":  info.available,
+		"registered": info.registered,
+		"pending":    info.pending,
+	}, info.message)
+}
 
 func handleSubmit(c *gin.Context) {
 	body := apihelper.Body(c)
@@ -63,13 +120,13 @@ func handleSubmit(c *gin.Context) {
 		response.Error(c, err.Error(), "提交失败")
 		return
 	}
-	var pending int
-	if err := diary.QueryRow(`SELECT COUNT(1) FROM `+table+` WHERE email = ? AND status = 'pending'`, email).Scan(&pending); err != nil {
+	info, err := lookupEmailAvailability(diary, email)
+	if err != nil {
 		response.Error(c, err.Error(), "提交失败")
 		return
 	}
-	if pending > 0 {
-		response.Error(c, "", "该邮箱已有待审核申请，请耐心等待邮件通知")
+	if !info.available {
+		response.Error(c, "", info.message)
 		return
 	}
 

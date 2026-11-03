@@ -16,6 +16,7 @@ import {
     CreditCard,
     Delete,
     Document,
+    DocumentChecked,
     Edit,
     Finished,
     Folder,
@@ -32,6 +33,7 @@ import {
     PieChart,
     Plus,
     PriceTag,
+    Promotion,
     Refresh,
     RefreshLeft,
     Search,
@@ -45,6 +47,7 @@ import {
     Upload,
     User,
     UserFilled,
+    View,
     Watch,
 } from '@element-plus/icons-vue'
 
@@ -69,6 +72,7 @@ const icons: Record<string, object> = {
     CreditCard,
     Delete,
     Document,
+    DocumentChecked,
     Edit,
     Finished,
     Folder,
@@ -85,6 +89,7 @@ const icons: Record<string, object> = {
     PieChart,
     Plus,
     PriceTag,
+    Promotion,
     Refresh,
     RefreshLeft,
     Search,
@@ -98,6 +103,7 @@ const icons: Record<string, object> = {
     Upload,
     User,
     UserFilled,
+    View,
     Watch,
 }
 
@@ -114,6 +120,9 @@ const aliases: Record<string, object> = {
     tickets: Tickets,
     upload: Upload,
     user: User,
+    view: View,
+    promotion: Promotion,
+    'document-checked': DocumentChecked,
     'price-tag': PriceTag,
     'copy-document': CopyDocument,
     'magic-stick': MagicStick,

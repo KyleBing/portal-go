@@ -19,30 +19,21 @@
                 <div class="panel-head">注册申请收款</div>
                 <ElForm label-width="160px" size="small" :model="form">
                     <ElFormItem label="当前应付金额">
-                        <ElRadioGroup v-model="form.registration_pay_amount_yuan">
+                        <ElRadioGroup v-if="payQrList.length" v-model="form.registration_pay_amount_yuan">
                             <ElRadio
-                                v-for="opt in payAmountOptions"
-                                :key="opt.value"
-                                :value="opt.value"
+                                v-for="item in payQrList"
+                                :key="item.id"
+                                :value="item.amount_yuan"
                             >
-                                {{ opt.label }}
+                                {{ formatRegistrationPayAmount(item.amount_yuan) }}
                             </ElRadio>
                         </ElRadioGroup>
+                        <p v-else class="hint block-hint">请先在「申请收款码」中添加金额档。</p>
                         <p class="hint block-hint">
-                            用户打开注册申请页时将看到对应金额的收款码；提交申请时会自动记录该金额到台账。默认 ¥28。
+                            用户打开注册申请页时看到当前档的金额、收款码和备注。收款码图片请到
+                            <RouterLink to="/user/registration-pay-qr">申请收款码</RouterLink>
+                            管理。
                         </p>
-                    </ElFormItem>
-                    <ElFormItem label="收款码预览">
-                        <div class="qr-preview">
-                            <div class="qr-preview__item">
-                                <span class="qr-preview__label">支付宝</span>
-                                <img :src="previewAlipay" alt="支付宝收款码预览">
-                            </div>
-                            <div class="qr-preview__item">
-                                <span class="qr-preview__label">微信</span>
-                                <img :src="previewWepay" alt="微信收款码预览">
-                            </div>
-                        </div>
                     </ElFormItem>
                 </ElForm>
             </div>
@@ -51,33 +42,31 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from 'vue'
+import {ref, onMounted} from 'vue'
 import {ElMessage} from 'element-plus'
 import Container from '@/layout/Container.vue'
 import Toolbar from '@/layout/Toolbar.vue'
 import Content from '@/layout/Content.vue'
 import systemApi from '@/api/systemApi'
-import { REGISTRATION_PAY_AMOUNT_OPTIONS, payQrImage } from '@/utils/payQrAssets'
-
-const payAmountOptions = REGISTRATION_PAY_AMOUNT_OPTIONS
+import type { RegistrationPayQrItem } from '@/api/registrationPayQrApi'
+import { formatRegistrationPayAmount, parsePayQrList } from '@/utils/payQrAssets'
 
 const isLoading = ref(false)
 const saving = ref(false)
+const payQrList = ref<RegistrationPayQrItem[]>([])
 const form = ref({
     invitation_code: '',
     registration_pay_amount_yuan: 28,
 })
-
-const previewAlipay = computed(() => payQrImage('alipay', form.value.registration_pay_amount_yuan))
-const previewWepay = computed(() => payQrImage('wechat', form.value.registration_pay_amount_yuan))
 
 function load() {
     isLoading.value = true
     systemApi.getAdmin()
         .then((res: any) => {
             const d = res.data || {}
+            payQrList.value = parsePayQrList(d.registration_pay_qr_list)
             form.value = {
-                invitation_code: d.invitation_code || '',
+                invitation_code: String(d.invitation_code || ''),
                 registration_pay_amount_yuan: Number.isFinite(Number(d.registration_pay_amount_yuan))
                     ? Number(d.registration_pay_amount_yuan)
                     : 28,
@@ -131,25 +120,5 @@ onMounted(load)
     margin: 8px 0 0;
     margin-left: 0 !important;
     line-height: 1.5;
-}
-.qr-preview {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-}
-.qr-preview__item {
-    text-align: center;
-    img {
-        display: block;
-        width: 140px;
-        border-radius: 8px;
-        border: 1px solid #e4e7ed;
-    }
-}
-.qr-preview__label {
-    display: block;
-    margin-bottom: 6px;
-    font-size: 12px;
-    color: #606266;
 }
 </style>

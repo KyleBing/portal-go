@@ -12,6 +12,7 @@ import (
 
 	"github.com/KyleBing/portal-go/internal/db"
 	"github.com/KyleBing/portal-go/internal/middleware"
+	"github.com/KyleBing/portal-go/internal/payqr"
 	"github.com/KyleBing/portal-go/internal/response"
 	"github.com/KyleBing/portal-go/internal/setup"
 	"github.com/KyleBing/portal-go/internal/util"
@@ -37,6 +38,8 @@ type SystemConfig struct {
 	HefengWeatherAPIHost      string `json:"hefeng_weather_api_host"`
 	RegisterTip               string `json:"register_tip"`
 	RegistrationPayAmountYuan int    `json:"registration_pay_amount_yuan"`
+	RegistrationPayQrAlipay   string `json:"registration_pay_qr_alipay"`
+	RegistrationPayQrWechat   string `json:"registration_pay_qr_wechat"`
 }
 
 // RegistrationPayAmountCustom 注册申请使用无固定金额收款码。
@@ -63,7 +66,7 @@ var defaultConfig = SystemConfig{
 
 // PublicConfig strips secrets.
 func (c SystemConfig) Public() gin.H {
-	return gin.H{
+	return attachPayQrList(gin.H{
 		"is_show_demo_account":         c.IsShowDemoAccount,
 		"demo_account":                 c.DemoAccount,
 		"demo_account_password":        c.DemoAccountPassword,
@@ -74,7 +77,17 @@ func (c SystemConfig) Public() gin.H {
 		"hefeng_weather_api_host":      c.HefengWeatherAPIHost,
 		"register_tip":                 c.RegisterTip,
 		"registration_pay_amount_yuan": c.RegistrationPayAmountYuan,
+	})
+}
+
+func attachPayQrList(h gin.H) gin.H {
+	items, err := payqr.ListItems()
+	if err != nil {
+		h["registration_pay_qr_list"] = []payqr.Item{}
+		return h
 	}
+	h["registration_pay_qr_list"] = items
+	return h
 }
 
 func trimAll(c SystemConfig) SystemConfig {
@@ -88,20 +101,17 @@ func trimAll(c SystemConfig) SystemConfig {
 	c.HefengWeatherAPIKey = strings.TrimSpace(c.HefengWeatherAPIKey)
 	c.HefengWeatherAPIHost = strings.TrimSpace(c.HefengWeatherAPIHost)
 	c.RegisterTip = strings.TrimSpace(c.RegisterTip)
+	c.RegistrationPayQrAlipay = strings.TrimSpace(c.RegistrationPayQrAlipay)
+	c.RegistrationPayQrWechat = strings.TrimSpace(c.RegistrationPayQrWechat)
 	if !IsRegistrationPayAmountYuan(c.RegistrationPayAmountYuan) {
 		c.RegistrationPayAmountYuan = DefaultRegistrationPayAmountYuan
 	}
 	return c
 }
 
-// IsRegistrationPayAmountYuan 是否为允许的注册收款档位（0 表示自定义无固定码）。
+// IsRegistrationPayAmountYuan 金额为非负整数即可；具体档位由收款码列表决定。
 func IsRegistrationPayAmountYuan(n int) bool {
-	switch n {
-	case RegistrationPayAmountCustom, 6, 8, 18, 28, 38, 48:
-		return true
-	default:
-		return false
-	}
+	return payqr.IsValidAmount(n)
 }
 
 func ensureTable(diary *sql.DB) error {
@@ -142,20 +152,22 @@ func ensureTable(diary *sql.DB) error {
 		return err
 	}
 	migrateLegacyProjectConfig(diary)
-	return addColumnIfMissing(diary, "registration_pay_amount_yuan")
+	if err := addColumnIfMissing(diary, "registration_pay_amount_yuan", "int NOT NULL DEFAULT 28 COMMENT '注册申请当前收款金额：0=自定义，6/8/18/28/38/48'"); err != nil {
+		return err
+	}
+	if err := addColumnIfMissing(diary, "registration_pay_qr_alipay", "varchar(1024) NOT NULL DEFAULT '' COMMENT '支付宝收款码图片地址'"); err != nil {
+		return err
+	}
+	return addColumnIfMissing(diary, "registration_pay_qr_wechat", "varchar(1024) NOT NULL DEFAULT '' COMMENT '微信收款码图片地址'")
 }
 
-func addColumnIfMissing(diary *sql.DB, column string) error {
+func addColumnIfMissing(diary *sql.DB, column, ddl string) error {
 	var n int
 	err := diary.QueryRow(`
 		SELECT COUNT(*) FROM information_schema.COLUMNS
 		WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`, tableName, column).Scan(&n)
 	if err != nil || n > 0 {
 		return err
-	}
-	ddl := "varchar(255) NOT NULL DEFAULT ''"
-	if column == "registration_pay_amount_yuan" {
-		ddl = "int NOT NULL DEFAULT 28 COMMENT '注册申请当前收款金额：0=自定义，6/8/18/28/38/48'"
 	}
 	_, err = diary.Exec("ALTER TABLE `" + tableName + "` ADD COLUMN `" + column + "` " + ddl)
 	return err
@@ -194,10 +206,12 @@ func scanConfig(diary *sql.DB) (SystemConfig, error) {
 	var demoAccount, demoPwd, invite, imgBase, bucket, style, ak, sk, wkey, whost sql.NullString
 	var registerTip sql.NullString
 	var payAmount sql.NullInt64
+	var payQrAlipay, payQrWechat sql.NullString
 	row := diary.QueryRow(`SELECT is_show_demo_account, demo_account, demo_account_password, invitation_code,
         qiniu_img_base_url, qiniu_bucket_name, qiniu_style_suffix, qiniu_access_key, qiniu_secret_key,
-        hefeng_weather_api_key, hefeng_weather_api_host, register_tip, registration_pay_amount_yuan FROM ` + tableName + ` WHERE id = 1 LIMIT 1`)
-	err := row.Scan(&isShow, &demoAccount, &demoPwd, &invite, &imgBase, &bucket, &style, &ak, &sk, &wkey, &whost, &registerTip, &payAmount)
+        hefeng_weather_api_key, hefeng_weather_api_host, register_tip, registration_pay_amount_yuan,
+        registration_pay_qr_alipay, registration_pay_qr_wechat FROM ` + tableName + ` WHERE id = 1 LIMIT 1`)
+	err := row.Scan(&isShow, &demoAccount, &demoPwd, &invite, &imgBase, &bucket, &style, &ak, &sk, &wkey, &whost, &registerTip, &payAmount, &payQrAlipay, &payQrWechat)
 	if err == sql.ErrNoRows {
 		return defaultConfig, nil
 	}
@@ -218,6 +232,8 @@ func scanConfig(diary *sql.DB) (SystemConfig, error) {
 		HefengWeatherAPIHost:      whost.String,
 		RegisterTip:               registerTip.String,
 		RegistrationPayAmountYuan: DefaultRegistrationPayAmountYuan,
+		RegistrationPayQrAlipay:   payQrAlipay.String,
+		RegistrationPayQrWechat:   payQrWechat.String,
 	}
 	if payAmount.Valid {
 		cfg.RegistrationPayAmountYuan = int(payAmount.Int64)
@@ -301,8 +317,9 @@ func SaveSystemConfig(payload map[string]interface{}) (SystemConfig, error) {
 	_, err = diary.Exec(`INSERT INTO `+tableName+` (
             id, is_show_demo_account, demo_account, demo_account_password, invitation_code,
             qiniu_img_base_url, qiniu_bucket_name, qiniu_style_suffix, qiniu_access_key, qiniu_secret_key,
-            hefeng_weather_api_key, hefeng_weather_api_host, register_tip, registration_pay_amount_yuan, date_modify
-        ) VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            hefeng_weather_api_key, hefeng_weather_api_host, register_tip, registration_pay_amount_yuan,
+            registration_pay_qr_alipay, registration_pay_qr_wechat, date_modify
+        ) VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON DUPLICATE KEY UPDATE
             is_show_demo_account=VALUES(is_show_demo_account),
             demo_account=VALUES(demo_account),
@@ -317,10 +334,13 @@ func SaveSystemConfig(payload map[string]interface{}) (SystemConfig, error) {
             hefeng_weather_api_host=VALUES(hefeng_weather_api_host),
             register_tip=VALUES(register_tip),
             registration_pay_amount_yuan=VALUES(registration_pay_amount_yuan),
+            registration_pay_qr_alipay=VALUES(registration_pay_qr_alipay),
+            registration_pay_qr_wechat=VALUES(registration_pay_qr_wechat),
             date_modify=VALUES(date_modify)`,
 		boolToInt(merged.IsShowDemoAccount), merged.DemoAccount, merged.DemoAccountPassword, merged.InvitationCode,
 		merged.QiniuImgBaseURL, merged.QiniuBucketName, merged.QiniuStyleSuffix, merged.QiniuAccessKey, merged.QiniuSecretKey,
-		merged.HefengWeatherAPIKey, merged.HefengWeatherAPIHost, merged.RegisterTip, merged.RegistrationPayAmountYuan, util.NowString())
+		merged.HefengWeatherAPIKey, merged.HefengWeatherAPIHost, merged.RegisterTip, merged.RegistrationPayAmountYuan,
+		merged.RegistrationPayQrAlipay, merged.RegistrationPayQrWechat, util.NowString())
 	if err != nil {
 		return SystemConfig{}, err
 	}
@@ -356,7 +376,14 @@ func mergePayload(cur SystemConfig, p map[string]interface{}) SystemConfig {
 	payYuan := cur.RegistrationPayAmountYuan
 	if v, ok := p["registration_pay_amount_yuan"]; ok {
 		if n, ok := asInt(v); ok && IsRegistrationPayAmountYuan(n) {
-			payYuan = n
+			items, err := payqr.ListItems()
+			if err == nil && len(items) > 0 {
+				if payqr.HasAmount(n) {
+					payYuan = n
+				}
+			} else {
+				payYuan = n
+			}
 		}
 	}
 	return SystemConfig{
@@ -373,6 +400,8 @@ func mergePayload(cur SystemConfig, p map[string]interface{}) SystemConfig {
 		HefengWeatherAPIHost:      getStr("hefeng_weather_api_host", cur.HefengWeatherAPIHost),
 		RegisterTip:               getStr("register_tip", cur.RegisterTip),
 		RegistrationPayAmountYuan: payYuan,
+		RegistrationPayQrAlipay:   getStr("registration_pay_qr_alipay", cur.RegistrationPayQrAlipay),
+		RegistrationPayQrWechat:   getStr("registration_pay_qr_wechat", cur.RegistrationPayQrWechat),
 	}
 }
 
@@ -520,7 +549,13 @@ func Register(r *gin.RouterGroup) {
 			response.Error(c, err.Error(), "读取系统配置失败")
 			return
 		}
-		response.Success(c, data, "请求成功")
+		raw, _ := json.Marshal(data)
+		var out gin.H
+		_ = json.Unmarshal(raw, &out)
+		if out == nil {
+			out = gin.H{}
+		}
+		response.Success(c, attachPayQrList(out), "请求成功")
 	})
 
 	g.PUT("", func(c *gin.Context) {

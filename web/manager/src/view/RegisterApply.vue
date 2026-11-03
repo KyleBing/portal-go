@@ -23,6 +23,7 @@
                 <ElFormItem prop="email">
                     <ElInput v-model="form.email" clearable autocomplete="email" placeholder="联系邮箱" />
                 </ElFormItem>
+                <p v-if="emailHint" class="email-hint" :class="{ ok: emailHintOk }">{{ emailHint }}</p>
                 <ElFormItem prop="paidAccount">
                     <ElInput v-model="form.paidAccount" clearable autocomplete="off" placeholder="付费昵称（支付宝/微信昵称）" />
                 </ElFormItem>
@@ -42,6 +43,7 @@
                         请使用{{ payPlatformLabel }}扫码支付{{ registerFeeYuan > 0 ? '上方金额' : '约定金额' }}，并在表单中填写付款账户信息。
                     </p>
                     <img class="pay-qr-image" :src="payQrImageSrc" :alt="`${payPlatformLabel}收款码`">
+                    <p v-if="payQrNote" class="pay-qr-note">{{ payQrNote }}</p>
                     <p class="pay-qr-payee">收款方：邴新科</p>
                 </div>
                 <ElFormItem prop="paidConfirmed" class="paid-confirm" :inline-message="true">
@@ -71,7 +73,7 @@ import { ElMessage } from 'element-plus'
 import registrationApplicationApi, { type PayPlatform } from '@/api/registrationApplicationApi'
 import PayPlatformRadio from '@/components/PayPlatformRadio.vue'
 import systemApi from '@/api/systemApi'
-import { isRegistrationPayAmount, payQrImage } from '@/utils/payQrAssets'
+import { parsePayQrList, payQrImage, pickPayQrItem } from '@/utils/payQrAssets'
 
 const projectStore = useProjectStore()
 const viewportHeight = computed(() => projectStore.windowInsets.height)
@@ -87,20 +89,38 @@ const form = ref({
     paidConfirmed: false, // 用户确认已完成扫码支付，提交前必须勾选
 })
 
+const emailHint = ref('')
+const emailHintOk = ref(false)
+
 const registerFeeYuan = ref(28)
+const currentPayQr = ref(pickPayQrItem([], 28))
 
 const payPlatformLabel = computed(() => (form.value.payPlatform === 'wechat' ? '微信' : '支付宝'))
 
 const payQrImageSrc = computed(() =>
-    payQrImage(form.value.payPlatform as PayPlatform, registerFeeYuan.value),
+    payQrImage(
+        form.value.payPlatform as PayPlatform,
+        form.value.payPlatform === 'wechat' ? currentPayQr.value?.wechat_url : currentPayQr.value?.alipay_url,
+    ),
+)
+
+const payQrNote = computed(() =>
+    form.value.payPlatform === 'wechat'
+        ? currentPayQr.value?.wechat_note || ''
+        : currentPayQr.value?.alipay_note || '',
 )
 
 function loadPayAmount() {
     systemApi
         .getPublic()
         .then((res: any) => {
+            const list = parsePayQrList(res.data?.registration_pay_qr_list)
             const n = Number(res.data?.registration_pay_amount_yuan)
-            if (isRegistrationPayAmount(n)) {
+            const item = pickPayQrItem(list, n)
+            if (item) {
+                registerFeeYuan.value = item.amount_yuan
+                currentPayQr.value = item
+            } else if (Number.isFinite(n) && n >= 0) {
                 registerFeeYuan.value = n
             }
         })
@@ -118,10 +138,44 @@ const validatePaidConfirmed: FormItemRule['validator'] = (_rule, value, callback
     callback()
 }
 
+// 填写完邮箱后检查是否可注册 / 是否已被占用
+const validateEmailAvailable: FormItemRule['validator'] = (_rule, value, callback) => {
+    const email = String(value || '').trim()
+    emailHint.value = ''
+    emailHintOk.value = false
+    if (!email || !/.+@.+\..+/.test(email)) {
+        callback()
+        return
+    }
+    registrationApplicationApi
+        .checkEmail(email)
+        .then((res: any) => {
+            if (String(form.value.email || '').trim() !== email) {
+                callback()
+                return
+            }
+            const msg = res.message || ''
+            if (res.data?.available) {
+                emailHintOk.value = true
+                emailHint.value = msg || '该邮箱可以申请注册'
+                callback()
+                return
+            }
+            emailHintOk.value = false
+            emailHint.value = ''
+            callback(new Error(msg || '该邮箱已注册'))
+        })
+        .catch((err: any) => {
+            emailHint.value = ''
+            callback(new Error(err?.message || '邮箱检查失败，请稍后重试'))
+        })
+}
+
 const rules: FormRules = {
     email: [
         { required: true, message: '请填写邮箱', trigger: 'blur' },
         { type: 'email', message: '邮箱格式不正确', trigger: 'blur' },
+        { validator: validateEmailAvailable, trigger: 'blur' },
     ],
     paidAccount: [{ required: true, message: '请填写付费昵称', trigger: 'blur' }],
     payPlatform: [{ required: true, message: '请选择付费平台', trigger: 'change' }],
@@ -201,6 +255,17 @@ function submit() {
         background: #f0f9ff;
         border: 1px solid #bae6fd;
         color: #0369a1;
+    }
+}
+
+.email-hint {
+    margin: -10px 0 14px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #dc2626;
+
+    &.ok {
+        color: #15803d;
     }
 }
 
@@ -287,6 +352,14 @@ function submit() {
     width: min(220px, 100%);
     margin: 0 auto;
     border-radius: 8px;
+}
+
+.pay-qr-note {
+    margin: 10px 0 0;
+    font-size: 13px;
+    line-height: 1.55;
+    color: #6b7280;
+    white-space: pre-wrap;
 }
 
 .pay-qr-payee {

@@ -82,9 +82,23 @@ export const API_MODULES: ApiModule[] = [
         prefix: '/system-config',
         description: '演示账号、七牛、和风天气等',
         endpoints: [
-            { method: 'GET', path: '/system-config', auth: 'P', summary: '公开配置（含注册收款金额；不含 invitation_code / 七牛密钥）' },
-            { method: 'GET', path: '/system-config/admin', auth: 'Admin', summary: '完整配置含密钥' },
+            { method: 'GET', path: '/system-config', auth: 'P', summary: '公开配置（含当前收款金额、registration_pay_qr_list；不含 invitation_code / 七牛密钥）' },
+            { method: 'GET', path: '/system-config/admin', auth: 'Admin', summary: '完整配置含密钥和收款码列表' },
             { method: 'PUT', path: '/system-config', auth: 'Admin', summary: '保存系统配置' },
+        ],
+    },
+    {
+        id: 'registration-pay-qr',
+        name: '申请收款码',
+        prefix: '/registration-pay-qr',
+        description: '注册申请收款码列表：任意金额，每档支付宝/微信各一张图和备注',
+        endpoints: [
+            { method: 'GET', path: '/registration-pay-qr', auth: 'P', summary: '收款码列表' },
+            { method: 'POST', path: '/registration-pay-qr', auth: 'Admin', summary: '新增金额档' },
+            { method: 'PUT', path: '/registration-pay-qr', auth: 'Admin', summary: '更新金额档' },
+            { method: 'DELETE', path: '/registration-pay-qr', auth: 'Admin', summary: '删除金额档', body: 'id' },
+            { method: 'GET', path: '/registration-pay-qr/file/:id/:platform', auth: 'P', summary: '读取已上传的收款码图片' },
+            { method: 'POST', path: '/registration-pay-qr/:id/upload/:platform', auth: 'Admin', summary: '上传收款码', body: 'multipart file' },
         ],
     },
     {
@@ -106,6 +120,7 @@ export const API_MODULES: ApiModule[] = [
         prefix: '/registration-application',
         description: '付费注册申请与管理员审核台账；审核通过后下发邀请码邮件',
         endpoints: [
+            { method: 'GET', path: '/registration-application/check-email', auth: 'P', summary: '申请前检查邮箱是否已注册或已有待审申请', params: 'email' },
             { method: 'POST', path: '/registration-application/submit', auth: 'P', summary: '提交申请（需先支付当前配置金额）', body: 'email, paidAccount, payPlatform' },
             { method: 'GET', path: '/registration-application/manage', auth: 'Admin', summary: '审核列表', params: 'status=all|pending|approved|rejected, pageNo, pageSize' },
             { method: 'GET', path: '/registration-application/detail', auth: 'Admin', summary: '申请详情', params: 'id' },
