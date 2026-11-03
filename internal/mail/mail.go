@@ -134,6 +134,16 @@ func (s *Sender) SendRegistrationApplicationSubmittedEmail(to string) error {
 	return s.send(to, "日记注册申请已收到", html, text)
 }
 
+// SendStylePreviewEmail 发送一封配色预览邮件。
+func (s *Sender) SendStylePreviewEmail(to string) error {
+	diaryURL := s.DiaryPublicBase()
+	html, text, err := renderStylePreviewEmail(s.cfg.LogoURL, diaryURL)
+	if err != nil {
+		return err
+	}
+	return s.send(to, "日记邮件样式预览", html, text)
+}
+
 func (s *Sender) SendInvitationEmail(to, invitationCode, applicantEmail, paymentUser string) error {
 	fullURL, displayURL := s.BuildRegisterURL(applicantEmail, invitationCode, paymentUser)
 	html, text, err := renderInvitationEmail(s.cfg.LogoURL, invitationCode, fullURL, displayURL)

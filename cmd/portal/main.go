@@ -7,12 +7,14 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/KyleBing/portal-go/internal/auth"
 	"github.com/KyleBing/portal-go/internal/config"
 	"github.com/KyleBing/portal-go/internal/db"
+	"github.com/KyleBing/portal-go/internal/mail"
 	"github.com/KyleBing/portal-go/internal/server"
 	"github.com/KyleBing/portal-go/internal/version"
 )
@@ -28,6 +30,9 @@ func main() {
 			return
 		case "version":
 			fmt.Println(version.Version)
+			return
+		case "mail-test":
+			runMailTest()
 			return
 		case "help", "-h", "--help":
 			usage()
@@ -48,8 +53,20 @@ Usage:
   portal              start HTTP server (default)
   portal serve        start HTTP server
   portal migrate      apply embedded diary schema migrations
+  portal mail-test    send a style-preview email (usage: portal mail-test <email>)
   portal version      print version
 `)
+}
+
+func runMailTest() {
+	to := "kylebing@163.com"
+	if len(os.Args) > 2 && strings.TrimSpace(os.Args[2]) != "" {
+		to = strings.TrimSpace(os.Args[2])
+	}
+	if err := mail.Default().SendStylePreviewEmail(to); err != nil {
+		log.Fatalf("发送测试邮件失败: %v", err)
+	}
+	log.Printf("已发送测试邮件到 %s", to)
 }
 
 func runMigrate() {

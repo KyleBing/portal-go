@@ -92,6 +92,22 @@ func renderRegistrationApplicationSubmittedEmail(logoURL string) (htmlBody, text
 	})
 }
 
+func renderStylePreviewEmail(logoURL, diaryURL string) (htmlBody, textBody string, err error) {
+	return renderEmail(emailContent{
+		LogoURL:          logoURL,
+		BrandName:        "日记",
+		Preheader:        "这是一封配色预览邮件。",
+		Title:            "邮件样式预览",
+		Intro:            "这是一封测试邮件，用来确认日记邮件的配色。",
+		Detail:           "头部已改为与日记顶部导航相同的深灰色，按钮使用日记的黄色强调色。",
+		ActionURL:        diaryURL,
+		ActionURLDisplay: diaryURL,
+		ActionLabel:      "打开日记",
+		Footer:           "这封邮件仅用于样式预览，请忽略其中的操作按钮。",
+		Year:             time.Now().Year(),
+	})
+}
+
 func renderEmail(c emailContent) (htmlBody, textBody string, err error) {
 	if c.ActionURLDisplay == "" {
 		c.ActionURLDisplay = c.ActionURL
@@ -118,6 +134,7 @@ func renderEmail(c emailContent) (htmlBody, textBody string, err error) {
 }
 
 // 邮件客户端兼容的表格布局，仅用内联样式。
+// 头部 #373737、强调色 #FFCC00 对齐 diary-vue 顶部导航（$bg-main / $color-main）。
 const emailHTML = `<!DOCTYPE html>
 <html lang="zh-Hans">
 <head>
@@ -133,7 +150,7 @@ const emailHTML = `<!DOCTYPE html>
     <td align="center" style="padding:32px 16px;">
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;">
         <tr>
-          <td bgcolor="#2c3e50" style="background-color:#2c3e50;padding:20px 28px;">
+          <td bgcolor="#373737" style="background-color:#373737;padding:20px 28px;">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 {{if .LogoURL}}
@@ -149,7 +166,7 @@ const emailHTML = `<!DOCTYPE html>
           </td>
         </tr>
         <tr>
-          <td height="4" bgcolor="#3498db" style="background-color:#3498db;font-size:0;line-height:0;height:4px;">&nbsp;</td>
+          <td height="4" bgcolor="#FFCC00" style="background-color:#FFCC00;font-size:0;line-height:0;height:4px;">&nbsp;</td>
         </tr>
         <tr>
           <td style="padding:32px 28px 8px;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB',sans-serif;color:#1a1a1a;">
@@ -163,13 +180,13 @@ const emailHTML = `<!DOCTYPE html>
             {{if and .ActionURL .ActionLabel}}
             <table role="presentation" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td bgcolor="#3498db" style="background-color:#3498db;border-radius:8px;">
-                  <a href="{{.ActionURL}}" style="display:inline-block;padding:13px 28px;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">{{.ActionLabel}}</a>
+                <td bgcolor="#FFCC00" style="background-color:#FFCC00;border-radius:8px;">
+                  <a href="{{.ActionURL}}" style="display:inline-block;padding:13px 28px;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;font-size:15px;font-weight:600;color:#373737;text-decoration:none;">{{.ActionLabel}}</a>
                 </td>
               </tr>
             </table>
             <p style="margin:28px 0 0;color:#8a939c;font-size:12px;line-height:1.65;">如果按钮无法打开，请将以下链接复制到浏览器：<br>
-              <a href="{{.ActionURL}}" style="color:#3498db;word-break:break-all;text-decoration:underline;">{{.ActionURLDisplay}}</a>
+              <a href="{{.ActionURL}}" style="color:#B38600;word-break:break-all;text-decoration:underline;">{{.ActionURLDisplay}}</a>
             </p>
             {{end}}
           </td>
