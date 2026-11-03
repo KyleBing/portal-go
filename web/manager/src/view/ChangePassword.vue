@@ -39,7 +39,7 @@
             <div class="card account-data-card">
                 <h2 class="page-title">账号数据</h2>
                 <p class="page-hint">
-                    <strong>注销账号</strong>：永久删除该账号在数据库中的全部数据，包括账号资料、日记、二维码、路书、邀请码和邮箱验证记录。注销后无法登录、无法恢复。
+                    <strong>注销账号</strong>：永久删除该账号在数据库中的全部数据，包括账号资料、日记、二维码、路书、邀请码、邮箱验证记录和本人提交的注册申请。注销后无法登录、无法恢复。
                 </p>
                 <div class="danger-actions">
                     <ElButton type="danger" plain icon="CircleClose" @click="destroyAccount">注销账号</ElButton>
@@ -118,7 +118,7 @@ function changePassword() {
 function destroyAccount() {
     confirmByEmail(
         '注销账号',
-        '注销会永久删除账号资料、日记、二维码、路书、邀请码和邮箱验证记录。注销后无法登录，也无法恢复。',
+        '注销会永久删除账号资料、日记、二维码、路书、邀请码、邮箱验证记录和本人提交的注册申请。注销后无法登录，也无法恢复。',
         '永久注销',
     ).then(() => userApi.destroyAccount())
         .then((res) => {

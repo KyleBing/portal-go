@@ -23,6 +23,11 @@ const ROUTE_FIXED: Array<RouteRecordRaw> =  [
         component: () => import('../view/Register.vue')
     },
     {
+        name: 'RegisterApply', path: '/register-apply',
+        meta: {isAdmin: false, title: '注册申请', isShowInMenu: false, icon: 'UserFilled',},
+        component: () => import('../view/RegisterApply.vue')
+    },
+    {
         name: 'Logout', path: '/logout',
         meta: {isAdmin: false, title: '退出登录', isShowInMenu: false, icon: 'SwitchButton',},
         component: () => import('../view/Logout.vue')
@@ -41,7 +46,7 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach((to, _, next) => {
-    if (to.name !== 'Login' && to.name !== 'Register') {
+    if (to.name !== 'Login' && to.name !== 'Register' && to.name !== 'RegisterApply') {
         const auth = getAuthorization()
         if (auth && auth.email) {
             const isAdmin = auth.email === 'kylebing@163.com'

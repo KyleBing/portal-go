@@ -35,6 +35,13 @@
                         <ElTableColumn width="100" align="center" prop="username" label="用户名"/>
                         <ElTableColumn width="150" align="center" prop="phone" label="手机号"/>
                         <ElTableColumn width="100" align="center" prop="wx" label="微信"/>
+                        <ElTableColumn width="110" align="center" label="注册方式">
+                            <template #default="{ row }">
+                                <ElTag size="small" :type="registerTagType(row.register_channel)" effect="light">
+                                    {{ registerChannelLabel(row.register_channel) }}
+                                </ElTag>
+                            </template>
+                        </ElTableColumn>
 <!--                        <ElTableColumn align="center" width="100" prop="homepage" label="主页"/>-->
                         <ElTableColumn sortable align="right" width="60" prop="count_diary" label="日记"/>
                         <ElTableColumn sortable align="right" width="60" prop="count_qr" label="二维码"/>
@@ -150,6 +157,7 @@ interface User {
     register_time: string
     last_visit_time: string
     email_verified_at?: string | null
+    register_channel?: string
 }
 
 interface GroupOption {
@@ -251,6 +259,39 @@ function closeModal(done?: () => void) {
     editingUid.value = null
     modalEdit.value = false
     if (done) done()
+}
+
+function registerChannelLabel(ch: string | undefined) {
+    switch (ch) {
+        case 'paid':
+            return '付费邀请'
+        case 'gift':
+            return '赠送邀请'
+        case 'bootstrap':
+            return '首位用户'
+        case 'admin':
+            return '管理员添加'
+        case 'config':
+            return '通用邀请码'
+        default:
+            return '未知'
+    }
+}
+
+function registerTagType(ch: string | undefined): 'success' | 'warning' | 'info' | 'primary' | '' {
+    switch (ch) {
+        case 'paid':
+            return 'warning'
+        case 'gift':
+            return 'success'
+        case 'admin':
+        case 'bootstrap':
+            return 'primary'
+        case 'config':
+            return 'info'
+        default:
+            return 'info'
+    }
 }
 
 function pageSizeChange(pageSize: number){

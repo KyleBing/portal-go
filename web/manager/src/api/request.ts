@@ -50,6 +50,9 @@ function request(
         'user/forgot',
         'user/resend-verify',
         'user/reset',
+        'registration-application/submit',
+        'system-config',
+        'setup/status',
     ])
     if (!publicPaths.has(path)){ // 公开认证接口不添加 Token
         const auth = getAuthorization()

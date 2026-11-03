@@ -82,7 +82,7 @@ export const API_MODULES: ApiModule[] = [
         prefix: '/system-config',
         description: '演示账号、七牛、和风天气等',
         endpoints: [
-            { method: 'GET', path: '/system-config', auth: 'P', summary: '公开配置（不含 invitation_code / 七牛密钥）' },
+            { method: 'GET', path: '/system-config', auth: 'P', summary: '公开配置（含注册收款金额；不含 invitation_code / 七牛密钥）' },
             { method: 'GET', path: '/system-config/admin', auth: 'Admin', summary: '完整配置含密钥' },
             { method: 'PUT', path: '/system-config', auth: 'Admin', summary: '保存系统配置' },
         ],
@@ -98,6 +98,20 @@ export const API_MODULES: ApiModule[] = [
             { method: 'POST', path: '/invitation/generate', auth: 'Admin', summary: '生成邀请码' },
             { method: 'POST', path: '/invitation/mark-shared', auth: 'Admin', summary: '标记已分享', body: 'id' },
             { method: 'DELETE', path: '/invitation/delete', auth: 'Admin', summary: '删除', params: 'id' },
+        ],
+    },
+    {
+        id: 'registration-application',
+        name: '注册申请',
+        prefix: '/registration-application',
+        description: '付费注册申请与管理员审核台账；审核通过后下发邀请码邮件',
+        endpoints: [
+            { method: 'POST', path: '/registration-application/submit', auth: 'P', summary: '提交申请（需先支付当前配置金额）', body: 'email, paidAccount, payPlatform' },
+            { method: 'GET', path: '/registration-application/manage', auth: 'Admin', summary: '审核列表', params: 'status=all|pending|approved|rejected, pageNo, pageSize' },
+            { method: 'GET', path: '/registration-application/detail', auth: 'Admin', summary: '申请详情', params: 'id' },
+            { method: 'POST', path: '/registration-application/approve', auth: 'Admin', summary: '通过并发送邀请码邮件', body: 'id, adminNote?' },
+            { method: 'POST', path: '/registration-application/reject', auth: 'Admin', summary: '拒绝', body: 'id, adminNote?' },
+            { method: 'DELETE', path: '/registration-application/delete', auth: 'Admin', summary: '删除台账', params: 'id' },
         ],
     },
     {

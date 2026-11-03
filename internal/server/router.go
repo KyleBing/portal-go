@@ -17,6 +17,7 @@ import (
 	"github.com/KyleBing/portal-go/internal/mappointer"
 	"github.com/KyleBing/portal-go/internal/maproute"
 	"github.com/KyleBing/portal-go/internal/qr"
+	"github.com/KyleBing/portal-go/internal/regapply"
 	"github.com/KyleBing/portal-go/internal/setup"
 	"github.com/KyleBing/portal-go/internal/starvenew"
 	"github.com/KyleBing/portal-go/internal/statistic"
@@ -86,6 +87,7 @@ func registerAll(rg *gin.RouterGroup) {
 	systemconfig.Register(rg.Group("/system-config"))
 	userconfig.Register(rg.Group("/user-config"))
 	invitation.Register(rg.Group("/invitation"))
+	regapply.Register(rg.Group("/registration-application"))
 
 	qr.RegisterFront(rg.Group("/qr-front"))
 	qr.RegisterManager(rg.Group("/qr-manager"))

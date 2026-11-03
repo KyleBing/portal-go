@@ -75,6 +75,41 @@ func (s *Sender) AppPublicURL() string {
 	return s.cfg.AppPublicURL
 }
 
+func (s *Sender) ManagerPublicBase() string {
+	if v := os.Getenv("MANAGER_PUBLIC_URL"); v != "" {
+		return strings.TrimRight(v, "/")
+	}
+	base := strings.TrimRight(s.cfg.AppPublicURL, "/")
+	if strings.Contains(base, "/portal") {
+		return strings.Replace(base, "/portal", "/manager", 1)
+	}
+	return base + "/manager"
+}
+
+// DiaryPublicBase 日记前端公开地址（邀请邮件注册链接用）。
+func (s *Sender) DiaryPublicBase() string {
+	if v := os.Getenv("DIARY_PUBLIC_URL"); v != "" {
+		return strings.TrimRight(v, "/")
+	}
+	base := strings.TrimRight(s.cfg.AppPublicURL, "/")
+	if strings.Contains(base, "/portal") {
+		return strings.Replace(base, "/portal", "/diary", 1)
+	}
+	return base + "/diary"
+}
+
+// BuildRegisterURL 返回带预填参数的完整注册链接，以及页面上展示的短链接。
+func (s *Sender) BuildRegisterURL(email, invitationCode, nickname string) (fullURL, displayURL string) {
+	displayURL = s.DiaryPublicBase() + "/#/register"
+	q := url.Values{}
+	q.Set("invitationCode", invitationCode)
+	q.Set("email", email)
+	if strings.TrimSpace(nickname) != "" {
+		q.Set("nickname", strings.TrimSpace(nickname))
+	}
+	return displayURL + "?" + q.Encode(), displayURL
+}
+
 func (s *Sender) SendVerifyEmail(to, verifyURL string) error {
 	html, text, err := renderVerifyEmail(s.cfg.LogoURL, verifyURL)
 	if err != nil {
@@ -89,6 +124,23 @@ func (s *Sender) SendResetEmail(to, resetURL string) error {
 		return err
 	}
 	return s.send(to, "重置日记密码", html, text)
+}
+
+func (s *Sender) SendRegistrationApplicationSubmittedEmail(to string) error {
+	html, text, err := renderRegistrationApplicationSubmittedEmail(s.cfg.LogoURL)
+	if err != nil {
+		return err
+	}
+	return s.send(to, "日记注册申请已收到", html, text)
+}
+
+func (s *Sender) SendInvitationEmail(to, invitationCode, applicantEmail, paymentUser string) error {
+	fullURL, displayURL := s.BuildRegisterURL(applicantEmail, invitationCode, paymentUser)
+	html, text, err := renderInvitationEmail(s.cfg.LogoURL, invitationCode, fullURL, displayURL)
+	if err != nil {
+		return err
+	}
+	return s.send(to, "日记注册邀请码", html, text)
 }
 
 func (s *Sender) send(to, subject, html, text string) error {

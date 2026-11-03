@@ -142,11 +142,12 @@ func registerUser(c *gin.Context, diary *sql.DB, body map[string]interface{}) {
 	} else {
 		verifiedAt = nil
 	}
-	res, err := diary.Exec(`insert into `+table+`(email, nickname, username, password, email_verified_at, register_time, last_visit_time, comment, wx, phone, homepage, group_id)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+	channel := resolveRegisterChannel(diary, body, isFirstUser)
+	res, err := diary.Exec(`insert into `+table+`(email, nickname, username, password, email_verified_at, register_time, last_visit_time, comment, wx, phone, homepage, group_id, register_channel)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		email, apihelper.S(body, "nickname"), apihelper.S(body, "username"), string(hash), verifiedAt, now, now,
 		apihelper.S(body, "comment"), apihelper.S(body, "wx"), apihelper.S(body, "phone"),
-		apihelper.S(body, "homepage"), groupID)
+		apihelper.S(body, "homepage"), groupID, channel)
 	if err != nil {
 		response.Error(c, "", "注册失败")
 		return
@@ -299,11 +300,11 @@ func handleAdd(c *gin.Context) {
 	}
 	now := util.NowString()
 	// 管理员直接添加的用户视为已验证
-	_, err = diary.Exec(`insert into `+table+`(email, nickname, username, password, email_verified_at, register_time, last_visit_time, comment, wx, phone, homepage, group_id)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+	_, err = diary.Exec(`insert into `+table+`(email, nickname, username, password, email_verified_at, register_time, last_visit_time, comment, wx, phone, homepage, group_id, register_channel)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		apihelper.S(body, "email"), apihelper.S(body, "nickname"), apihelper.S(body, "username"), string(hash), now, now, now,
 		apihelper.S(body, "comment"), apihelper.S(body, "wx"), apihelper.S(body, "phone"),
-		apihelper.S(body, "homepage"), apihelper.S(body, "group_id"))
+		apihelper.S(body, "homepage"), apihelper.S(body, "group_id"), "admin")
 	if err != nil {
 		response.Error(c, err.Error(), "用户添加失败")
 		return
@@ -477,17 +478,22 @@ func handleDestroyAccount(c *gin.Context) {
 		response.Error(c, "", "beginTransaction: 事务执行失败，已回滚")
 		return
 	}
-	stmts := []string{
-		`delete from diaries where uid = ?`,
-		`delete from invitations where binding_uid = ?`,
-		`delete from map_pointer where uid = ?`,
-		`delete from map_route where uid = ?`,
-		`delete from qrs where uid = ?`,
-		`delete from email_tokens where uid = ?`,
-		`delete from ` + table + ` where uid = ?`,
+	steps := []struct {
+		sql  string
+		args []interface{}
+	}{
+		{`delete from diaries where uid = ?`, []interface{}{user.UID}},
+		{`delete from invitations where binding_uid = ? or applicant_email = ?`, []interface{}{user.UID, user.Email}},
+		{`delete from map_pointer where uid = ?`, []interface{}{user.UID}},
+		{`delete from map_route where uid = ?`, []interface{}{user.UID}},
+		{`delete from qrs where uid = ?`, []interface{}{user.UID}},
+		{`delete from email_tokens where uid = ?`, []interface{}{user.UID}},
+		{`update registration_applications set reviewer_uid = NULL where reviewer_uid = ?`, []interface{}{user.UID}},
+		{`delete from registration_applications where email = ?`, []interface{}{user.Email}},
+		{`delete from ` + table + ` where uid = ?`, []interface{}{user.UID}},
 	}
-	for _, s := range stmts {
-		if _, err := tx.Exec(s, user.UID); err != nil {
+	for _, step := range steps {
+		if _, err := tx.Exec(step.sql, step.args...); err != nil {
 			_ = tx.Rollback()
 			response.Error(c, err.Error(), "query: 事务执行失败，已回滚")
 			return

@@ -54,6 +54,7 @@
 | [用户配置](#用户配置-user-config) | `/user-config` | 主题 / 默认分类 / 编辑器 |
 | [系统配置](#系统配置-system-config) | `/system-config` | 演示账号、七牛、和风等 |
 | [邀请码](#邀请码-invitation) | `/invitation` | 注册邀请 |
+| [注册申请](#注册申请-registration-application) | `/registration-application` | 付费申请与审核 |
 | [日记](#日记-diary) | `/diary` | 核心日记 CRUD |
 | [日记分类](#日记分类-diary-category) | `/diary-category` | 分类字典 |
 | [账单](#账单-bill) | `/bill` | 解析 `category=bill` 日记 |
@@ -117,11 +118,11 @@
 
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
-| GET | `/system-config` | P | 公开配置（演示账号、七牛公有信息、和风 key、注册提示等；**不含** invitation_code / 七牛密钥） |
+| GET | `/system-config` | P | 公开配置（演示账号、七牛公有信息、和风 key、注册提示、注册收款金额等；**不含** invitation_code / 七牛密钥） |
 | GET | `/system-config/admin` | Admin | 完整配置 |
 | PUT | `/system-config` | Admin | 保存 |
 
-主要字段：`is_show_demo_account`, `demo_account`, `demo_account_password`, `invitation_code`, `qiniu_*`, `hefeng_weather_*`, `register_tip`
+主要字段：`is_show_demo_account`, `demo_account`, `demo_account_password`, `invitation_code`, `qiniu_*`, `hefeng_weather_*`, `register_tip`, `registration_pay_amount_yuan`（默认 28，可选 0/6/8/18/28/38/48）
 
 ---
 
@@ -133,6 +134,21 @@
 | GET | `/manage` | Admin | Manager 列表（联表用户）；Query `status=all\|unused\|used`、`pageNo`、`pageSize`；返回 `list` + `pager` + `summary` |
 | POST | `/generate` | Admin | 生成 |
 | POST | `/mark-shared` | Admin | Body `id` |
+| DELETE | `/delete` | Admin | Query `id` |
+
+---
+
+## 注册申请 `/registration-application`
+
+付费用户先扫码支付当前系统配置金额，再提交申请；管理员审核通过后生成一次性邀请码并邮件通知。
+
+| 方法 | 路径 | 鉴权 | 说明 |
+|------|------|------|------|
+| POST | `/submit` | P | Body `email, paidAccount, payPlatform(alipay\|wechat)`；记录当时的 `pay_amount_yuan` |
+| GET | `/manage` | Admin | Query `status=all\|pending\|approved\|rejected`、`pageNo`、`pageSize` |
+| GET | `/detail` | Admin | Query `id` |
+| POST | `/approve` | Admin | Body `id, adminNote?`：生成邀请码并发送邮件 |
+| POST | `/reject` | Admin | Body `id, adminNote?` |
 | DELETE | `/delete` | Admin | Query `id` |
 
 ---

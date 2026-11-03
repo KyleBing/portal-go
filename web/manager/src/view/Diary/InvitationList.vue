@@ -30,6 +30,18 @@
                         <ElButton link type="primary" size="small" @click="copyCode(row.id)">复制</ElButton>
                     </template>
                 </ElTableColumn>
+                <ElTableColumn prop="applicant_email" label="申请邮箱" min-width="160">
+                    <template #default="{ row }">
+                        <span v-if="row.applicant_email">{{ row.applicant_email }}</span>
+                        <span v-else class="muted">—</span>
+                    </template>
+                </ElTableColumn>
+                <ElTableColumn prop="payment_user" label="支付用户" min-width="120">
+                    <template #default="{ row }">
+                        <span v-if="row.payment_user">{{ row.payment_user }}</span>
+                        <span v-else class="muted">—</span>
+                    </template>
+                </ElTableColumn>
                 <ElTableColumn label="状态" width="100" align="center">
                     <template #default="{ row }">
                         <ElTag v-if="row.binding_uid" type="success" size="small">已使用</ElTag>
@@ -100,6 +112,8 @@ interface InvitationRow {
     date_register: string | null
     binding_uid: number | null
     is_shared: number
+    applicant_email?: string | null
+    payment_user?: string | null
     binding_nickname?: string
     binding_email?: string
     binding_username?: string

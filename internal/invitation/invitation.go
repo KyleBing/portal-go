@@ -99,6 +99,7 @@ func handleManage(c *gin.Context) {
 	sqlBuf := `
 		SELECT
 			i.id, i.date_create, i.date_register, i.binding_uid, i.is_shared,
+			i.applicant_email, i.payment_user,
 			u.nickname AS binding_nickname,
 			u.email AS binding_email,
 			u.username AS binding_username

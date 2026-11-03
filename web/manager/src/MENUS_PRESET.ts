@@ -331,6 +331,18 @@ const MENUS_PRESET: Array<EntityMenu> = [
                 "children": []
             },
             {
+                "name": "注册审核",
+                "type": EnumMenuType['菜单'],
+                "path": "/system/registration-applications",
+                "match_path": "",
+                "component": "User/RegistrationApplicationList.vue",
+                "visible": EnumMenuVisible['可见'],
+                "redirect": "",
+                "icon": "Notebook",
+                "isNeedAdminPermission": true,
+                "children": []
+            },
+            {
                 "name": "邀请码",
                 "type": EnumMenuType['菜单'],
                 "path": "/system/invitation",
@@ -339,6 +351,18 @@ const MENUS_PRESET: Array<EntityMenu> = [
                 "visible": EnumMenuVisible['可见'],
                 "redirect": "",
                 "icon": "Ticket",
+                "isNeedAdminPermission": true,
+                "children": []
+            },
+            {
+                "name": "系统配置",
+                "type": EnumMenuType['菜单'],
+                "path": "/system/config",
+                "match_path": "",
+                "component": "System/SystemConfig.vue",
+                "visible": EnumMenuVisible['可见'],
+                "redirect": "",
+                "icon": "Setting",
                 "isNeedAdminPermission": true,
                 "children": []
             },

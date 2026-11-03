@@ -26,6 +26,7 @@
                 <ElButton class="register-btn" type="primary" native-type="submit" :loading="submitting" @click="submit">注册</ElButton>
             </ElForm>
             <div class="register-links">
+                <RouterLink to="/register-apply">申请注册</RouterLink>
                 <RouterLink to="/login">已有账号，去登录</RouterLink>
             </div>
         </div>
@@ -35,7 +36,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useProjectStore } from "@/pinia"
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElNotification, ElButton, ElForm, ElFormItem, ElInput } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import userApi from "@/api/userApi"
@@ -43,6 +44,7 @@ import { request } from "@/api/request"
 
 const projectStore = useProjectStore()
 const router = useRouter()
+const route = useRoute()
 
 interface RegisterForm {
     email: string
@@ -65,7 +67,24 @@ const submitting = ref(false)
 // 已有用户时邀请码必填，与日记注册一致
 const invitationRequired = ref(true)
 
+function applyQueryPrefill() {
+    const q = route.query
+    const pick = (key: string) => {
+        const v = q[key]
+        if (typeof v === 'string' && v.trim()) return v.trim()
+        if (Array.isArray(v) && v[0]) return String(v[0]).trim()
+        return ''
+    }
+    const email = pick('email')
+    const code = pick('invitationCode') || pick('invitation')
+    const nickname = pick('nickname') || pick('username')
+    if (email) formRegister.value.email = email
+    if (code) formRegister.value.invitationCode = code
+    if (nickname) formRegister.value.nickname = nickname
+}
+
 onMounted(() => {
+    applyQueryPrefill()
     request('get', null, null, false, '/setup/status')
         .then((res: any) => {
             invitationRequired.value = !!res.data?.hasRegisteredUsers
@@ -214,6 +233,9 @@ function submit() {
 .register-links {
     margin-top: 18px;
     text-align: center;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
 
     a {
         color: #4b5563;

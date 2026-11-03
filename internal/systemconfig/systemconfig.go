@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/KyleBing/portal-go/internal/db"
@@ -23,47 +24,56 @@ const usersTable = "users"
 
 // SystemConfig holds the full config (with secrets).
 type SystemConfig struct {
-	IsShowDemoAccount    bool   `json:"is_show_demo_account"`
-	DemoAccount          string `json:"demo_account"`
-	DemoAccountPassword  string `json:"demo_account_password"`
-	InvitationCode       string `json:"invitation_code"`
-	QiniuImgBaseURL      string `json:"qiniu_img_base_url"`
-	QiniuBucketName      string `json:"qiniu_bucket_name"`
-	QiniuStyleSuffix     string `json:"qiniu_style_suffix"`
-	QiniuAccessKey       string `json:"qiniu_access_key"`
-	QiniuSecretKey       string `json:"qiniu_secret_key"`
-	HefengWeatherAPIKey  string `json:"hefeng_weather_api_key"`
-	HefengWeatherAPIHost string `json:"hefeng_weather_api_host"`
-	RegisterTip          string `json:"register_tip"`
+	IsShowDemoAccount         bool   `json:"is_show_demo_account"`
+	DemoAccount               string `json:"demo_account"`
+	DemoAccountPassword       string `json:"demo_account_password"`
+	InvitationCode            string `json:"invitation_code"`
+	QiniuImgBaseURL           string `json:"qiniu_img_base_url"`
+	QiniuBucketName           string `json:"qiniu_bucket_name"`
+	QiniuStyleSuffix          string `json:"qiniu_style_suffix"`
+	QiniuAccessKey            string `json:"qiniu_access_key"`
+	QiniuSecretKey            string `json:"qiniu_secret_key"`
+	HefengWeatherAPIKey       string `json:"hefeng_weather_api_key"`
+	HefengWeatherAPIHost      string `json:"hefeng_weather_api_host"`
+	RegisterTip               string `json:"register_tip"`
+	RegistrationPayAmountYuan int    `json:"registration_pay_amount_yuan"`
 }
 
+// RegistrationPayAmountCustom 注册申请使用无固定金额收款码。
+const RegistrationPayAmountCustom = 0
+
+// DefaultRegistrationPayAmountYuan 默认注册收款金额（元）。
+const DefaultRegistrationPayAmountYuan = 28
+
 var defaultConfig = SystemConfig{
-	IsShowDemoAccount:    false,
-	DemoAccount:          "test@163.com",
-	DemoAccountPassword:  "test",
-	InvitationCode:       "",
-	QiniuImgBaseURL:      "http://diary-container.kylebing.cn/",
-	QiniuBucketName:      "diary-container",
-	QiniuStyleSuffix:     "thumbnail_600px",
-	QiniuAccessKey:       "",
-	QiniuSecretKey:       "",
-	HefengWeatherAPIKey:  "c5894aea6ce2495ca0f78a2963c04d57",
-	HefengWeatherAPIHost: "pd3fbqjryn.re.qweatherapi.com",
-	RegisterTip:          "<p>长期未使用的用户将定期进行清理，大概一年清一次。</p><p>项目已开源</p>",
+	IsShowDemoAccount:         false,
+	DemoAccount:               "test@163.com",
+	DemoAccountPassword:       "test",
+	InvitationCode:            "",
+	QiniuImgBaseURL:           "http://diary-container.kylebing.cn/",
+	QiniuBucketName:           "diary-container",
+	QiniuStyleSuffix:          "thumbnail_600px",
+	QiniuAccessKey:            "",
+	QiniuSecretKey:            "",
+	HefengWeatherAPIKey:       "c5894aea6ce2495ca0f78a2963c04d57",
+	HefengWeatherAPIHost:      "pd3fbqjryn.re.qweatherapi.com",
+	RegisterTip:               "<p>长期未使用的用户将定期进行清理，大概一年清一次。</p><p>项目已开源</p>",
+	RegistrationPayAmountYuan: DefaultRegistrationPayAmountYuan,
 }
 
 // PublicConfig strips secrets.
 func (c SystemConfig) Public() gin.H {
 	return gin.H{
-		"is_show_demo_account":    c.IsShowDemoAccount,
-		"demo_account":            c.DemoAccount,
-		"demo_account_password":   c.DemoAccountPassword,
-		"qiniu_img_base_url":      c.QiniuImgBaseURL,
-		"qiniu_bucket_name":       c.QiniuBucketName,
-		"qiniu_style_suffix":      c.QiniuStyleSuffix,
-		"hefeng_weather_api_key":  c.HefengWeatherAPIKey,
-		"hefeng_weather_api_host": c.HefengWeatherAPIHost,
-		"register_tip":            c.RegisterTip,
+		"is_show_demo_account":         c.IsShowDemoAccount,
+		"demo_account":                 c.DemoAccount,
+		"demo_account_password":        c.DemoAccountPassword,
+		"qiniu_img_base_url":           c.QiniuImgBaseURL,
+		"qiniu_bucket_name":            c.QiniuBucketName,
+		"qiniu_style_suffix":           c.QiniuStyleSuffix,
+		"hefeng_weather_api_key":       c.HefengWeatherAPIKey,
+		"hefeng_weather_api_host":      c.HefengWeatherAPIHost,
+		"register_tip":                 c.RegisterTip,
+		"registration_pay_amount_yuan": c.RegistrationPayAmountYuan,
 	}
 }
 
@@ -78,7 +88,20 @@ func trimAll(c SystemConfig) SystemConfig {
 	c.HefengWeatherAPIKey = strings.TrimSpace(c.HefengWeatherAPIKey)
 	c.HefengWeatherAPIHost = strings.TrimSpace(c.HefengWeatherAPIHost)
 	c.RegisterTip = strings.TrimSpace(c.RegisterTip)
+	if !IsRegistrationPayAmountYuan(c.RegistrationPayAmountYuan) {
+		c.RegistrationPayAmountYuan = DefaultRegistrationPayAmountYuan
+	}
 	return c
+}
+
+// IsRegistrationPayAmountYuan 是否为允许的注册收款档位（0 表示自定义无固定码）。
+func IsRegistrationPayAmountYuan(n int) bool {
+	switch n {
+	case RegistrationPayAmountCustom, 6, 8, 18, 28, 38, 48:
+		return true
+	default:
+		return false
+	}
 }
 
 func ensureTable(diary *sql.DB) error {
@@ -119,7 +142,23 @@ func ensureTable(diary *sql.DB) error {
 		return err
 	}
 	migrateLegacyProjectConfig(diary)
-	return nil
+	return addColumnIfMissing(diary, "registration_pay_amount_yuan")
+}
+
+func addColumnIfMissing(diary *sql.DB, column string) error {
+	var n int
+	err := diary.QueryRow(`
+		SELECT COUNT(*) FROM information_schema.COLUMNS
+		WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`, tableName, column).Scan(&n)
+	if err != nil || n > 0 {
+		return err
+	}
+	ddl := "varchar(255) NOT NULL DEFAULT ''"
+	if column == "registration_pay_amount_yuan" {
+		ddl = "int NOT NULL DEFAULT 28 COMMENT '注册申请当前收款金额：0=自定义，6/8/18/28/38/48'"
+	}
+	_, err = diary.Exec("ALTER TABLE `" + tableName + "` ADD COLUMN `" + column + "` " + ddl)
+	return err
 }
 
 func migrateLegacyProjectConfig(diary *sql.DB) {
@@ -154,10 +193,11 @@ func scanConfig(diary *sql.DB) (SystemConfig, error) {
 	var isShow int
 	var demoAccount, demoPwd, invite, imgBase, bucket, style, ak, sk, wkey, whost sql.NullString
 	var registerTip sql.NullString
+	var payAmount sql.NullInt64
 	row := diary.QueryRow(`SELECT is_show_demo_account, demo_account, demo_account_password, invitation_code,
         qiniu_img_base_url, qiniu_bucket_name, qiniu_style_suffix, qiniu_access_key, qiniu_secret_key,
-        hefeng_weather_api_key, hefeng_weather_api_host, register_tip FROM ` + tableName + ` WHERE id = 1 LIMIT 1`)
-	err := row.Scan(&isShow, &demoAccount, &demoPwd, &invite, &imgBase, &bucket, &style, &ak, &sk, &wkey, &whost, &registerTip)
+        hefeng_weather_api_key, hefeng_weather_api_host, register_tip, registration_pay_amount_yuan FROM ` + tableName + ` WHERE id = 1 LIMIT 1`)
+	err := row.Scan(&isShow, &demoAccount, &demoPwd, &invite, &imgBase, &bucket, &style, &ak, &sk, &wkey, &whost, &registerTip, &payAmount)
 	if err == sql.ErrNoRows {
 		return defaultConfig, nil
 	}
@@ -165,18 +205,22 @@ func scanConfig(diary *sql.DB) (SystemConfig, error) {
 		return cfg, err
 	}
 	cfg = SystemConfig{
-		IsShowDemoAccount:    isShow != 0,
-		DemoAccount:          demoAccount.String,
-		DemoAccountPassword:  demoPwd.String,
-		InvitationCode:       invite.String,
-		QiniuImgBaseURL:      imgBase.String,
-		QiniuBucketName:      bucket.String,
-		QiniuStyleSuffix:     style.String,
-		QiniuAccessKey:       ak.String,
-		QiniuSecretKey:       sk.String,
-		HefengWeatherAPIKey:  wkey.String,
-		HefengWeatherAPIHost: whost.String,
-		RegisterTip:          registerTip.String,
+		IsShowDemoAccount:         isShow != 0,
+		DemoAccount:               demoAccount.String,
+		DemoAccountPassword:       demoPwd.String,
+		InvitationCode:            invite.String,
+		QiniuImgBaseURL:           imgBase.String,
+		QiniuBucketName:           bucket.String,
+		QiniuStyleSuffix:          style.String,
+		QiniuAccessKey:            ak.String,
+		QiniuSecretKey:            sk.String,
+		HefengWeatherAPIKey:       wkey.String,
+		HefengWeatherAPIHost:      whost.String,
+		RegisterTip:               registerTip.String,
+		RegistrationPayAmountYuan: DefaultRegistrationPayAmountYuan,
+	}
+	if payAmount.Valid {
+		cfg.RegistrationPayAmountYuan = int(payAmount.Int64)
 	}
 	return trimAll(cfg), nil
 }
@@ -257,8 +301,8 @@ func SaveSystemConfig(payload map[string]interface{}) (SystemConfig, error) {
 	_, err = diary.Exec(`INSERT INTO `+tableName+` (
             id, is_show_demo_account, demo_account, demo_account_password, invitation_code,
             qiniu_img_base_url, qiniu_bucket_name, qiniu_style_suffix, qiniu_access_key, qiniu_secret_key,
-            hefeng_weather_api_key, hefeng_weather_api_host, register_tip, date_modify
-        ) VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            hefeng_weather_api_key, hefeng_weather_api_host, register_tip, registration_pay_amount_yuan, date_modify
+        ) VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON DUPLICATE KEY UPDATE
             is_show_demo_account=VALUES(is_show_demo_account),
             demo_account=VALUES(demo_account),
@@ -272,10 +316,11 @@ func SaveSystemConfig(payload map[string]interface{}) (SystemConfig, error) {
             hefeng_weather_api_key=VALUES(hefeng_weather_api_key),
             hefeng_weather_api_host=VALUES(hefeng_weather_api_host),
             register_tip=VALUES(register_tip),
+            registration_pay_amount_yuan=VALUES(registration_pay_amount_yuan),
             date_modify=VALUES(date_modify)`,
 		boolToInt(merged.IsShowDemoAccount), merged.DemoAccount, merged.DemoAccountPassword, merged.InvitationCode,
 		merged.QiniuImgBaseURL, merged.QiniuBucketName, merged.QiniuStyleSuffix, merged.QiniuAccessKey, merged.QiniuSecretKey,
-		merged.HefengWeatherAPIKey, merged.HefengWeatherAPIHost, merged.RegisterTip, util.NowString())
+		merged.HefengWeatherAPIKey, merged.HefengWeatherAPIHost, merged.RegisterTip, merged.RegistrationPayAmountYuan, util.NowString())
 	if err != nil {
 		return SystemConfig{}, err
 	}
@@ -308,20 +353,44 @@ func mergePayload(cur SystemConfig, p map[string]interface{}) SystemConfig {
 		}
 		return def
 	}
-	return SystemConfig{
-		IsShowDemoAccount:    getBool("is_show_demo_account", cur.IsShowDemoAccount),
-		DemoAccount:          getStr("demo_account", cur.DemoAccount),
-		DemoAccountPassword:  getStr("demo_account_password", cur.DemoAccountPassword),
-		InvitationCode:       getStr("invitation_code", cur.InvitationCode),
-		QiniuImgBaseURL:      getStr("qiniu_img_base_url", cur.QiniuImgBaseURL),
-		QiniuBucketName:      getStr("qiniu_bucket_name", cur.QiniuBucketName),
-		QiniuStyleSuffix:     getStr("qiniu_style_suffix", cur.QiniuStyleSuffix),
-		QiniuAccessKey:       getStr("qiniu_access_key", cur.QiniuAccessKey),
-		QiniuSecretKey:       getStr("qiniu_secret_key", cur.QiniuSecretKey),
-		HefengWeatherAPIKey:  getStr("hefeng_weather_api_key", cur.HefengWeatherAPIKey),
-		HefengWeatherAPIHost: getStr("hefeng_weather_api_host", cur.HefengWeatherAPIHost),
-		RegisterTip:          getStr("register_tip", cur.RegisterTip),
+	payYuan := cur.RegistrationPayAmountYuan
+	if v, ok := p["registration_pay_amount_yuan"]; ok {
+		if n, ok := asInt(v); ok && IsRegistrationPayAmountYuan(n) {
+			payYuan = n
+		}
 	}
+	return SystemConfig{
+		IsShowDemoAccount:         getBool("is_show_demo_account", cur.IsShowDemoAccount),
+		DemoAccount:               getStr("demo_account", cur.DemoAccount),
+		DemoAccountPassword:       getStr("demo_account_password", cur.DemoAccountPassword),
+		InvitationCode:            getStr("invitation_code", cur.InvitationCode),
+		QiniuImgBaseURL:           getStr("qiniu_img_base_url", cur.QiniuImgBaseURL),
+		QiniuBucketName:           getStr("qiniu_bucket_name", cur.QiniuBucketName),
+		QiniuStyleSuffix:          getStr("qiniu_style_suffix", cur.QiniuStyleSuffix),
+		QiniuAccessKey:            getStr("qiniu_access_key", cur.QiniuAccessKey),
+		QiniuSecretKey:            getStr("qiniu_secret_key", cur.QiniuSecretKey),
+		HefengWeatherAPIKey:       getStr("hefeng_weather_api_key", cur.HefengWeatherAPIKey),
+		HefengWeatherAPIHost:      getStr("hefeng_weather_api_host", cur.HefengWeatherAPIHost),
+		RegisterTip:               getStr("register_tip", cur.RegisterTip),
+		RegistrationPayAmountYuan: payYuan,
+	}
+}
+
+func asInt(v interface{}) (int, bool) {
+	switch n := v.(type) {
+	case float64:
+		return int(n), true
+	case int:
+		return n, true
+	case int64:
+		return int(n), true
+	case string:
+		i, err := strconv.Atoi(strings.TrimSpace(n))
+		if err == nil {
+			return i, true
+		}
+	}
+	return 0, false
 }
 
 var nonUsernameRe = regexp.MustCompile(`[^a-z0-9_]`)

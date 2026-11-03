@@ -24,6 +24,7 @@
                 </ElFormItem>
                 <div class="login-links">
                     <RouterLink to="/register">注册</RouterLink>
+                    <RouterLink to="/register-apply">申请注册</RouterLink>
                     <a href="javascript:;" @click="showForgot = true">找回密码</a>
                 </div>
             </ElForm>
