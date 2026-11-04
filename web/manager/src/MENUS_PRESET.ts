@@ -326,10 +326,34 @@ const MENUS_PRESET: Array<EntityMenu> = [
         "match_path": "",
         "component": "",
         "visible": EnumMenuVisible['可见'],
-        "redirect": "/apple/chip-a",
+        "redirect": "/apple/devices",
         "icon": "Apple",
         "isNeedAdminPermission": true,
         "children": [
+            {
+                "name": "设备参数",
+                "type": EnumMenuType['菜单'],
+                "path": "/apple/devices",
+                "match_path": "",
+                "component": "Apple/AppleDevices.vue",
+                "visible": EnumMenuVisible['可见'],
+                "redirect": "",
+                "icon": "Iphone",
+                "isNeedAdminPermission": false,
+                "children": []
+            },
+            {
+                "name": "芯片参数",
+                "type": EnumMenuType['菜单'],
+                "path": "/apple/chips",
+                "match_path": "",
+                "component": "Apple/AppleChipDb.vue",
+                "visible": EnumMenuVisible['可见'],
+                "redirect": "",
+                "icon": "Cpu",
+                "isNeedAdminPermission": false,
+                "children": []
+            },
             {
                 "name": "A 系列芯片",
                 "type": EnumMenuType['菜单'],

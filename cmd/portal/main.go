@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/KyleBing/portal-go/internal/applecatalog"
 	"github.com/KyleBing/portal-go/internal/auth"
 	"github.com/KyleBing/portal-go/internal/config"
 	"github.com/KyleBing/portal-go/internal/db"
@@ -82,6 +83,9 @@ func runMigrate() {
 	if err := db.Migrate(diary); err != nil {
 		log.Fatalf("migrate 失败: %v", err)
 	}
+	if err := applecatalog.SeedIfEmpty(); err != nil {
+		log.Fatalf("苹果参数种子失败: %v", err)
+	}
 	log.Println("migrate 完成")
 }
 
@@ -91,6 +95,12 @@ func runServe() {
 	}
 	if _, err := config.Load(); err != nil {
 		log.Printf("加载数据库配置失败（可能尚未完成安装引导）: %v", err)
+	} else if diary, err := db.Open(db.Diary); err != nil {
+		log.Printf("连接 diary 失败: %v", err)
+	} else if err := db.Migrate(diary); err != nil {
+		log.Printf("migrate: %v", err)
+	} else if err := applecatalog.SeedIfEmpty(); err != nil {
+		log.Printf("苹果设备种子写入失败: %v", err)
 	}
 	defer db.CloseAll()
 

@@ -282,6 +282,19 @@ export const API_MODULES: ApiModule[] = [
         ],
     },
     {
+        id: 'apple-catalog',
+        name: '苹果参数',
+        prefix: '/apple-catalog',
+        description: '设备与芯片参数。record 是页面字段，source 是原始嵌套参数。公开读取，管理员可改。',
+        endpoints: [
+            { method: 'GET', path: '/apple-catalog', auth: 'P', summary: '设备与芯片', params: 'full=1 时带上原始参数' },
+            { method: 'POST', path: '/apple-catalog/device', auth: 'Admin', summary: '新增或更新一台设备', body: '页面字段；可带 source' },
+            { method: 'DELETE', path: '/apple-catalog/device', auth: 'Admin', summary: '删除设备', body: 'id' },
+            { method: 'POST', path: '/apple-catalog/chip', auth: 'Admin', summary: '新增或更新一颗芯片', body: '页面字段；可带 source' },
+            { method: 'DELETE', path: '/apple-catalog/chip', auth: 'Admin', summary: '删除芯片', body: 'id' },
+        ],
+    },
+    {
         id: 'thumbs-up',
         name: '点赞',
         prefix: '/thumbs-up',

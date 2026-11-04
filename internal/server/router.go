@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/KyleBing/portal-go/internal/applecatalog"
 	"github.com/KyleBing/portal-go/internal/bankcard"
 	"github.com/KyleBing/portal-go/internal/bill"
 	"github.com/KyleBing/portal-go/internal/billimport"
@@ -100,6 +101,7 @@ func registerAll(rg *gin.RouterGroup) {
 	statistic.Register(rg.Group("/statistic"))
 
 	diary.Register(rg.Group("/diary"))
+	applecatalog.Register(rg.Group("/apple-catalog"))
 	category.Register(rg.Group("/diary-category"))
 	bankcard.Register(rg.Group("/bank-card"))
 	bill.Register(rg.Group("/bill"))
