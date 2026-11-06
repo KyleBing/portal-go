@@ -8,6 +8,7 @@
                     <ElRadioButton value="">全部</ElRadioButton>
                     <ElRadioButton value="iphone">iPhone</ElRadioButton>
                     <ElRadioButton value="ipad">iPad</ElRadioButton>
+                    <ElRadioButton value="watch">Watch</ElRadioButton>
                     <ElRadioButton value="airpods">AirPods</ElRadioButton>
                 </ElRadioGroup>
                 <ElInput v-model="keyword" clearable placeholder="名称、芯片" style="width: 180px" />
@@ -142,6 +143,7 @@
                                     <ElSelect v-model="form.family" style="width: 100%">
                                         <ElOption label="iPhone" value="iphone" />
                                         <ElOption label="iPad" value="ipad" />
+                                        <ElOption label="Watch" value="watch" />
                                         <ElOption label="AirPods" value="airpods" />
                                     </ElSelect>
                                 </ElFormItem>
@@ -274,7 +276,7 @@ import appleCatalogApi from '@/api/appleCatalogApi'
 import { getAuthorization } from '@/utility'
 import { useProjectStore } from '@/pinia'
 
-const FAMILY: Record<string, string> = { iphone: 'iPhone', ipad: 'iPad', airpods: 'AirPods' }
+const FAMILY: Record<string, string> = { iphone: 'iPhone', ipad: 'iPad', watch: 'Watch', airpods: 'AirPods' }
 
 const projectStore = useProjectStore()
 const isAdmin = computed(() => Number(getAuthorization()?.group_id) === 1)

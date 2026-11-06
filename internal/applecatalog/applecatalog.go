@@ -23,12 +23,14 @@ var seedFS embed.FS
 const dbName = db.Diary
 
 var (
-	seedMu   sync.Mutex
-	seeded   bool
-	repairMu sync.Mutex
-	repaired bool
-	fillMu   sync.Mutex
-	filled   bool
+	seedMu     sync.Mutex
+	seeded     bool
+	repairMu   sync.Mutex
+	repaired   bool
+	fillMu     sync.Mutex
+	filled     bool
+	deviceMu   sync.Mutex
+	deviceFill bool
 )
 
 func Register(r *gin.RouterGroup) {
@@ -56,6 +58,7 @@ func handleAll(c *gin.Context) {
 	_ = SeedIfEmpty()
 	_ = RepairChipFlatFields()
 	_ = FillMissingChipSpecs()
+	_ = FillMissingDeviceSpecs()
 	full := c.Query("full") == "1"
 	diary, err := db.Open(dbName)
 	if err != nil {
@@ -445,6 +448,120 @@ func fillMissingChipSpecs() error {
 			return err
 		}
 		if err = insertSeed(tx, "apple_chips", clone, sort, false); err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+		inserted++
+	}
+	if inserted == 0 {
+		_ = tx.Rollback()
+		return nil
+	}
+	return tx.Commit()
+}
+
+// FillMissingDeviceSpecs 插入种子里还没有的设备，空字段用种子补。
+func FillMissingDeviceSpecs() error {
+	deviceMu.Lock()
+	defer deviceMu.Unlock()
+	if deviceFill {
+		return nil
+	}
+	err := fillMissingDeviceSpecs()
+	if err == nil {
+		deviceFill = true
+	}
+	return err
+}
+
+func fillMissingDeviceSpecs() error {
+	raw, err := seedFS.ReadFile("seed.json")
+	if err != nil {
+		return err
+	}
+	var file seedFile
+	if err = json.Unmarshal(raw, &file); err != nil {
+		return err
+	}
+	byID := map[string]map[string]interface{}{}
+	for _, device := range file.Devices {
+		id := asString(device["id"])
+		if id != "" {
+			byID[id] = device
+		}
+	}
+	diary, err := db.Open(dbName)
+	if err != nil {
+		return err
+	}
+	rows, err := db.QueryMaps(diary, `SELECT id, record_json, source_json FROM apple_devices`)
+	if err != nil {
+		return err
+	}
+	present := map[string]bool{}
+	presentName := map[string]bool{}
+	now := util.NowString()
+	for _, row := range rows {
+		id := asString(row["id"])
+		present[id] = true
+		recordText := asString(row["record_json"])
+		if recordText == "" {
+			continue
+		}
+		var item map[string]interface{}
+		if err = json.Unmarshal([]byte(recordText), &item); err != nil {
+			continue
+		}
+		presentName[asString(item["family"])+":"+asString(item["name"])] = true
+		seed := byID[id]
+		if seed == nil {
+			continue
+		}
+		changed := false
+		keys := []string{
+			"chip", "cpuRate", "cpuCore", "cpuBit", "memoryGb", "memoryType", "battery", "batteryUnit",
+			"material", "water", "duration", "caseMm", "dust", "cellular", "wifi", "bluetooth", "uwb",
+			"heart", "gps", "accel", "gyro", "altimeter", "osFrom", "osTo", "unsupported", "require",
+			"chargeTime", "port", "image",
+		}
+		for _, key := range keys {
+			changed = setIfEmpty(item, key, seed[key]) || changed
+		}
+		if asString(item["family"]) == "watch" && seed["osTo"] != nil && asString(item["osTo"]) == "9.3.1" {
+			item["osTo"] = seed["osTo"]
+			changed = true
+		}
+		if !changed {
+			continue
+		}
+		next, err := json.Marshal(item)
+		if err != nil {
+			return err
+		}
+		if _, err = diary.Exec(`UPDATE apple_devices SET record_json=?, date_modify=? WHERE id=?`,
+			string(next), now, id); err != nil {
+			return err
+		}
+	}
+	var sort int
+	_ = diary.QueryRow(`SELECT COALESCE(MAX(sort_order), 0) FROM apple_devices`).Scan(&sort)
+	tx, err := diary.Begin()
+	if err != nil {
+		return err
+	}
+	inserted := 0
+	for _, device := range file.Devices {
+		id := asString(device["id"])
+		if id == "" || present[id] || presentName[asString(device["family"])+":"+asString(device["name"])] {
+			continue
+		}
+		sort++
+		clone, err := cloneMap(device)
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+		if err = insertSeed(tx, "apple_devices", clone, sort, true); err != nil {
 			_ = tx.Rollback()
 			return err
 		}
