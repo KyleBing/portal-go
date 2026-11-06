@@ -522,7 +522,7 @@ func fillMissingDeviceSpecs() error {
 			"chip", "cpuRate", "cpuCore", "cpuBit", "memoryGb", "memoryType", "battery", "batteryUnit",
 			"material", "water", "duration", "caseMm", "dust", "cellular", "wifi", "bluetooth", "uwb",
 			"heart", "gps", "accel", "gyro", "altimeter", "osFrom", "osTo", "unsupported", "require",
-			"chargeTime", "port", "image",
+			"chargeTime", "port", "image", "connect", "charge", "unlock", "pencil", "hardware", "models",
 		}
 		for _, key := range keys {
 			changed = setIfEmpty(item, key, seed[key]) || changed

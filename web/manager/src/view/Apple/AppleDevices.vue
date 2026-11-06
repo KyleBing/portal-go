@@ -89,7 +89,7 @@
                     <ElDescriptionsItem label="面板">{{ detail.screen?.type || '—' }}</ElDescriptionsItem>
                     <ElDescriptionsItem label="像素">{{ pixelText(detail) }}</ElDescriptionsItem>
                     <ElDescriptionsItem label="密度">{{ dash(detail.screen?.density, 'ppi') }}</ElDescriptionsItem>
-                    <ElDescriptionsItem label="刷新">{{ dash(detail.screen?.hz, 'Hz') }}</ElDescriptionsItem>
+                    <ElDescriptionsItem label="刷新">{{ hzText(detail) }}</ElDescriptionsItem>
                     <ElDescriptionsItem label="亮度">{{ dash(detail.screen?.nits, 'nit') }}</ElDescriptionsItem>
                     <ElDescriptionsItem label="HDR">{{ detail.screen?.hdr ? '有' : '无' }}</ElDescriptionsItem>
                 </ElDescriptions>
@@ -196,7 +196,8 @@
                             <ElCol :span="8"><ElFormItem label="密度"><ElInputNumber v-model="form.screen.density" :controls="false" style="width: 100%" /></ElFormItem></ElCol>
                         </ElRow>
                         <ElRow :gutter="16">
-                            <ElCol :span="8"><ElFormItem label="刷新"><ElInputNumber v-model="form.screen.hz" :controls="false" style="width: 100%" /></ElFormItem></ElCol>
+                            <ElCol :span="8"><ElFormItem label="最低刷新"><ElInputNumber v-model="form.screen.hzMin" :controls="false" style="width: 100%" /></ElFormItem></ElCol>
+                            <ElCol :span="8"><ElFormItem label="最高刷新"><ElInputNumber v-model="form.screen.hz" :controls="false" style="width: 100%" /></ElFormItem></ElCol>
                             <ElCol :span="8"><ElFormItem label="亮度"><ElInputNumber v-model="form.screen.nits" :controls="false" style="width: 100%" /></ElFormItem></ElCol>
                         </ElRow>
                     </ElForm>
@@ -314,7 +315,7 @@ function blank() {
         size: { height: 0, width: 0, thickness: 0, weight: 0 },
         sizeOpen: { height: 0, width: 0, thickness: 0 },
         earWeight: 0, caseWeight: 0, material: '', water: '',
-        screen: { inch: 0, type: '', pxW: 0, pxH: 0, density: 0, hz: 0, nits: 0, hdr: false },
+        screen: { inch: 0, type: '', pxW: 0, pxH: 0, density: 0, hz: 0, hzMin: 0, nits: 0, hdr: false },
         cpuRate: 0, cpuCore: 0, gpuCore: 0, scoreSingle: 0, scoreMulti: 0,
         memoryGb: 0, memoryType: '', storage: [] as string[], battery: 0, batteryUnit: 'mAh',
         camera: '', port: '', noise: false, duration: 0, control: '', colors: [] as { name: string, color: string }[]
@@ -330,6 +331,16 @@ function familyLabel(value: string) {
 function dash(value: unknown, unit = '') {
     if (value === 0 || value === '' || value === null || value === undefined) return '—'
     return unit ? `${value} ${unit}` : String(value)
+}
+
+// 刷新率：有区间显示 1-120Hz，否则单值。
+function hzText(row: any) {
+    const screen = row?.screen || {}
+    const max = Number(screen.hz) || 0
+    const min = Number(screen.hzMin) || 0
+    if (!max) return '—'
+    if (min && min !== max) return `${min}-${max}Hz`
+    return `${max}Hz`
 }
 
 // 列表里的高宽厚。
