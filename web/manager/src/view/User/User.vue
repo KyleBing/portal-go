@@ -61,7 +61,7 @@
                                 {{ scope.row.group_id === 1 ? '管理员' : '普通' }}
                             </template>
                         </ElTableColumn>
-                        <ElTableColumn align="center" width="320" label="操作">
+                        <ElTableColumn align="center" width="320" label="操作" fixed="right">
                             <template #default="scope">
                                 <ElButton @click="goEdit(scope.row)" type="primary" icon="edit" plain size="small">编辑</ElButton>
                                 <ElButton v-if="!scope.row.email_verified_at" @click="forceVerify(scope.row)" type="success" plain size="small">强制验证</ElButton>

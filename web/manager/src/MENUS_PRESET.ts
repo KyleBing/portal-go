@@ -58,22 +58,10 @@ const MENUS_PRESET: Array<EntityMenu> = [
         "match_path": "",
         "component": "",
         "visible": EnumMenuVisible['可见'],
-        "redirect": "/user/list",
+        "redirect": "/user/registration-applications",
         "icon": "User",
         "isNeedAdminPermission": false,
         "children": [
-            {
-                "name": "用户管理",
-                "type": EnumMenuType['菜单'],
-                "path": "/user/list",
-                "match_path": "",
-                "component": "User/User.vue",
-                "visible": EnumMenuVisible['可见'],
-                "redirect": "",
-                "icon": "User",
-                "isNeedAdminPermission": false,
-                "children": []
-            },
             {
                 "name": "注册审核",
                 "type": EnumMenuType['菜单'],
@@ -84,6 +72,18 @@ const MENUS_PRESET: Array<EntityMenu> = [
                 "redirect": "",
                 "icon": "Notebook",
                 "isNeedAdminPermission": true,
+                "children": []
+            },
+            {
+                "name": "用户管理",
+                "type": EnumMenuType['菜单'],
+                "path": "/user/list",
+                "match_path": "",
+                "component": "User/User.vue",
+                "visible": EnumMenuVisible['可见'],
+                "redirect": "",
+                "icon": "User",
+                "isNeedAdminPermission": false,
                 "children": []
             },
             {

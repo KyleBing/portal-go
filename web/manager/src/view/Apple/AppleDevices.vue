@@ -62,12 +62,13 @@
         <ElDialog v-model="detailVisible" :title="detail?.name || '设备'" width="820px" top="6vh">
             <div v-if="detail" class="pane">
                 <div class="detail-head">
-                    <img v-if="detail.image" class="detail-photo" :src="detail.image" alt="" />
+                    <img v-if="detail.image" class="detail-photo" :src="thumbUrl(detail.image)" alt="" />
                     <div>
                         <ElTag>{{ familyLabel(detail.family) }}</ElTag>
                         <ElTag v-if="detail.series" type="info">{{ detail.series }}</ElTag>
                         <ElTag v-if="detail.isNew" type="success">新品</ElTag>
                         <p class="detail-line">{{ detail.chip || '—' }} · {{ detail.release || '—' }}</p>
+                        <p class="detail-line muted">主图 / 侧面 / 其它 {{ imageCount(detail) }}</p>
                     </div>
                 </div>
                 <ElDescriptions :column="3" border size="small" title="机身">
@@ -155,7 +156,16 @@
                             <ElCol :span="12"><ElFormItem label="芯片"><ElInput v-model="form.chip" /></ElFormItem></ElCol>
                             <ElCol :span="12"><ElFormItem label="新品"><ElSwitch v-model="form.isNew" /></ElFormItem></ElCol>
                         </ElRow>
-                        <ElFormItem label="图片"><ElInput v-model="form.image" placeholder="图片地址，可空" /></ElFormItem>
+                        <ElFormItem label="主图"><ElInput v-model="form.image" placeholder="主图地址，保存时去掉 thumbnail 后缀" /></ElFormItem>
+                        <ElFormItem label="侧面图"><ElInput v-model="form.imageSide" placeholder="侧面图地址，可空" /></ElFormItem>
+                        <ElFormItem label="其它图">
+                            <ElInput
+                                v-model="imagesText"
+                                type="textarea"
+                                :rows="4"
+                                placeholder="每行一个地址；保存时去掉 -thumbnail_*px"
+                            />
+                        </ElFormItem>
                     </ElForm>
                 </ElTabPane>
                 <ElTabPane label="机身" name="body">
@@ -292,7 +302,24 @@ const detail = ref<any>(null)
 const editTab = ref('base')
 const form = ref<any>(blank())
 const sourceText = ref('')
+const imagesText = ref('')
 const storageDraft = ref('')
+
+const THUMB_RE = /(?:-thumbnail_\d+px)+$/i
+
+function stripThumb(url: string) {
+    return String(url || '').trim().replace(THUMB_RE, '')
+}
+
+function thumbUrl(url: string) {
+    const base = stripThumb(url)
+    return base ? `${base}-thumbnail_200px` : ''
+}
+
+function imageCount(row: any) {
+    const n = (row?.image ? 1 : 0) + (row?.imageSide ? 1 : 0) + (Array.isArray(row?.images) ? row.images.length : 0)
+    return n ? `${n} 张` : '无图'
+}
 
 const tableHeight = computed(() => {
     const insets = projectStore.contentInsets
@@ -311,7 +338,7 @@ const shown = computed(() => {
 function blank() {
     return {
         id: '', family: 'iphone', series: '', name: '', nameShort: '', release: '', year: 0,
-        image: '', isNew: false, chip: '',
+        image: '', imageSide: '', images: [] as string[], isNew: false, chip: '',
         size: { height: 0, width: 0, thickness: 0, weight: 0 },
         sizeOpen: { height: 0, width: 0, thickness: 0 },
         earWeight: 0, caseWeight: 0, material: '', water: '',
@@ -399,8 +426,10 @@ function editDevice(row: any) {
         sizeOpen: { ...blank().sizeOpen, ...(copy.sizeOpen || {}) },
         screen: { ...blank().screen, ...(copy.screen || {}) },
         colors: copy.colors || [],
-        storage: copy.storage || []
+        storage: copy.storage || [],
+        images: copy.images || []
     }
+    imagesText.value = (form.value.images || []).join('\n')
     storageDraft.value = ''
     editTab.value = 'base'
     visible.value = true
@@ -410,6 +439,7 @@ function editDevice(row: any) {
 function addDevice() {
     form.value = blank()
     sourceText.value = ''
+    imagesText.value = ''
     storageDraft.value = ''
     editTab.value = 'base'
     visible.value = true
@@ -446,6 +476,14 @@ function save() {
     const numbers = (payload.storage || []).map((item: string) => Number(String(item).replace(/[^\d.]/g, ''))).filter((item: number) => item > 0)
     payload.storageMax = numbers.length ? Math.max(...numbers) : 0
     payload.year = Number(String(payload.release || '').slice(0, 4)) || payload.year || 0
+    payload.image = stripThumb(payload.image)
+    payload.imageSide = stripThumb(payload.imageSide)
+    payload.images = imagesText.value
+        .split(/\n+/)
+        .map(stripThumb)
+        .filter(Boolean)
+    if (!payload.imageSide) delete payload.imageSide
+    if (!payload.images.length) delete payload.images
     if (source !== undefined) payload.source = source
     isSaving.value = true
     appleCatalogApi.saveDevice(payload).then(() => {
@@ -489,6 +527,11 @@ onMounted(loadData)
 
 .detail-line {
     margin: 8px 0 0;
+}
+
+.detail-line.muted {
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
 }
 
 .block {

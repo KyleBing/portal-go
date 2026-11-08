@@ -285,7 +285,8 @@ func handleDetail(c *gin.Context) {
 		response.Error(c, "", "")
 		return
 	}
-	decodeDiaryRow(row, true, false)
+	// 与 list 一致：账单日记附带当日 billData（收入/支出/合计），避免详情覆盖列表后金额丢失。
+	decodeDiaryRow(row, true, true)
 	if asInt(row["is_public"]) == 1 {
 		ownerID := asInt(row["uid"])
 		u, _ := db.QueryMap(diary, `select * from users where uid = ?`, ownerID)

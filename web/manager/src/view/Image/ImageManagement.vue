@@ -78,29 +78,41 @@
                         <div class="image-actions">
                             <ElButton size="small" @click.stop="openEditDialog(item)" text type="primary" icon="Edit" plain></ElButton>
                             <ElButton size="small" @click.stop="goDelete([item])" text type="danger" icon="delete" plain></ElButton>
-                            <ElDropdown trigger="hover">
-                                <ElButton size="small" type="info" icon="CopyDocument" text plain>
-                                    <ElIcon class="el-icon--right"><ArrowDown /></ElIcon>
-                                </ElButton>
-                                <template #dropdown>
-                                    <ElDropdownMenu>
-                                        <ElDropdownItem v-for="(resolution, key) in ImageResolutions" 
-                                                       :key="key"
-                                                       class="clipboard"
-                                                       :data-clipboard="`${currentBucketInfo?.baseUrl}/${item.id}-${resolution.name}`">
-                                            {{ resolution.name }} ({{ resolution.width }}x{{ resolution.height }})
-                                        </ElDropdownItem>
-                                        <ElDropdownItem class="clipboard"
-                                                       :data-clipboard="`${currentBucketInfo?.baseUrl}/${item.id}`">
-                                            原图
-                                        </ElDropdownItem>
-                                        <ElDropdownItem class="clipboard"
-                                                       :data-clipboard="item.id">
-                                            图片标识（无前缀）
-                                        </ElDropdownItem>
-                                    </ElDropdownMenu>
-                                </template>
-                            </ElDropdown>
+                            <div class="copy-split" @click.stop>
+                                <ElButton
+                                    size="small"
+                                    type="info"
+                                    icon="CopyDocument"
+                                    text
+                                    plain
+                                    class="clipboard copy-split__main"
+                                    :data-clipboard="item.id"
+                                    title="复制图片标识"
+                                />
+                                <ElDropdown trigger="click" placement="bottom-end" popper-class="copy-dropdown-compact">
+                                    <ElButton size="small" type="info" text plain class="copy-split__caret">
+                                        <ElIcon><ArrowDown /></ElIcon>
+                                    </ElButton>
+                                    <template #dropdown>
+                                        <ElDropdownMenu>
+                                            <ElDropdownItem
+                                                v-for="(resolution, key) in ImageResolutions"
+                                                :key="key"
+                                                class="clipboard"
+                                                :data-clipboard="`${currentBucketInfo?.baseUrl}/${item.id}-${resolution.name}`"
+                                            >
+                                                {{ resolution.name }}
+                                            </ElDropdownItem>
+                                            <ElDropdownItem
+                                                class="clipboard"
+                                                :data-clipboard="`${currentBucketInfo?.baseUrl}/${item.id}`"
+                                            >
+                                                原图
+                                            </ElDropdownItem>
+                                        </ElDropdownMenu>
+                                    </template>
+                                </ElDropdown>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -853,10 +865,33 @@ const submitEdit = () => {
 
             .image-actions {
                 margin-top: 10px;
-                text-align: center;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 2px;
+
                 .el-button {
-                    margin-left: 5px;
+                    margin-left: 0;
                     font-size: 12px;
+                }
+            }
+
+            .copy-split {
+                display: inline-flex;
+                align-items: center;
+                border-radius: 4px;
+
+                .copy-split__main {
+                    padding: 5px 4px 5px 6px !important;
+                }
+
+                .copy-split__caret {
+                    padding: 5px 4px !important;
+                    min-width: 20px;
+
+                    .el-icon {
+                        font-size: 11px;
+                    }
                 }
             }
         }
@@ -881,6 +916,17 @@ const submitEdit = () => {
                 }
             }
         }
+    }
+}
+</style>
+
+<style lang="scss">
+.copy-dropdown-compact {
+    .el-dropdown-menu__item {
+        font-size: 11px;
+        line-height: 1.25;
+        padding: 3px 10px;
+        min-width: 0;
     }
 }
 </style>
