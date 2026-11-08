@@ -3,13 +3,6 @@
         <Toolbar>
             <template #left>
                 <ElForm inline class="tool-bar" @submit.prevent="getFileList">
-                    <ElFormItem label="">
-                        <ElRadioGroup v-model="currentBucket">
-                            <ElRadioButton :value="item"
-                                           :label="item"
-                                           v-for="item in BucketQiniuMap.keys()" :key="item"/>
-                        </ElRadioGroup>
-                    </ElFormItem>
                     <ElFormItem label="文件描述">
                         <ElInput type="text" v-model="searchKeyword"></ElInput>
                     </ElFormItem>
@@ -150,32 +143,95 @@
         <ElDialog
             title="上传图片"
             v-model="isShowingModalUpload"
-            width="600px"
+            width="760px"
+            :close-on-click-modal="!isUploading"
+            :close-on-press-escape="!isUploading"
+            @closed="resetUploadForm"
             center>
-            <ElForm label-width="80px">
-                <ElFormItem label="选择文件">
-                    <input type="file" ref="inputUpload" @change="inputFileChange" multiple accept="image/*"/>
-                </ElFormItem>
-                <ElFormItem label="文件描述">
-                    <div v-for="file in formImage.files" :key="file.name" class="file-description-item">
-                        <div class="file-preview">
-                            <img :src="previewUrls[file.name]" alt="preview" class="preview-image">
+            <div class="upload-dialog">
+                <div
+                    class="upload-dropzone"
+                    :class="{ 'is-dragover': isDragOver, 'is-disabled': isUploading }"
+                    @click="triggerFileSelect"
+                    @dragenter.prevent="onDragEnter"
+                    @dragover.prevent="onDragOver"
+                    @dragleave.prevent="onDragLeave"
+                    @drop.prevent="onDropFiles"
+                >
+                    <input
+                        type="file"
+                        ref="inputUpload"
+                        class="upload-dropzone__input"
+                        multiple
+                        accept="image/*"
+                        :disabled="isUploading"
+                        @change="inputFileChange"
+                    />
+                    <ElIcon class="upload-dropzone__icon" :size="36"><Upload /></ElIcon>
+                    <p class="upload-dropzone__title">点击或拖拽图片到此处</p>
+                    <p class="upload-dropzone__hint">支持多选 / 继续追加 · 单张不超过 10MB · 仅图片</p>
+                </div>
+
+                <div v-if="pendingFiles.length" class="upload-meta">
+                    <span>已选 {{ pendingFiles.length }} 张</span>
+                    <ElButton
+                        text
+                        type="danger"
+                        size="small"
+                        :disabled="isUploading"
+                        @click="clearPendingFiles"
+                    >清空</ElButton>
+                </div>
+
+                <div v-if="pendingFiles.length" class="upload-file-grid">
+                    <div
+                        v-for="item in pendingFiles"
+                        :key="item.uid"
+                        class="upload-file-card"
+                        :class="`is-${item.status}`"
+                    >
+                        <div class="upload-file-card__thumb">
+                            <img :src="item.preview" :alt="item.name">
+                            <button
+                                v-if="!isUploading"
+                                type="button"
+                                class="upload-file-card__remove"
+                                title="移除"
+                                @click.stop="removePendingFile(item.uid)"
+                            >
+                                <ElIcon :size="12"><Close /></ElIcon>
+                            </button>
+                            <div v-if="item.status === 'uploading'" class="upload-file-card__mask">上传中</div>
+                            <div v-else-if="item.status === 'success'" class="upload-file-card__mask is-success">完成</div>
+                            <div v-else-if="item.status === 'error'" class="upload-file-card__mask is-error">失败</div>
                         </div>
-                        <div class="file-info">
-                            <div class="file-name">{{ file.name }}</div>
-                            <ElInput type="text" v-model="formImage.fileDescriptions[file.name]" placeholder="请输入图片描述"></ElInput>
-                        </div>
+                        <ElInput
+                            v-model="item.description"
+                            size="small"
+                            :disabled="isUploading"
+                            :title="item.name"
+                            placeholder="图片描述"
+                        />
                     </div>
-                </ElFormItem>
-                <ElFormItem label="BUCKET">
-                    <ElRadioGroup v-model="formImage.bucket">
-                        <ElRadio :label="item" v-for="item in BucketQiniuMap.keys()" :key="item"></ElRadio>
-                    </ElRadioGroup>
-                </ElFormItem>
-            </ElForm>
-            <template #footer center class="dialog-footer">
-                <ElButton @click="isShowingModalUpload = false">取 消</ElButton>
-                <ElButton icon="Upload" type="primary" @click="fileUpload">确 定</ElButton>
+                </div>
+
+                <ElProgress
+                    v-if="isUploading"
+                    :percentage="uploadProgress"
+                    :stroke-width="10"
+                    striped
+                    striped-flow
+                />
+            </div>
+            <template #footer>
+                <ElButton :disabled="isUploading" @click="isShowingModalUpload = false">取 消</ElButton>
+                <ElButton
+                    icon="Upload"
+                    type="primary"
+                    :loading="isUploading"
+                    :disabled="pendingFiles.length === 0"
+                    @click="fileUpload"
+                >{{ isUploading ? `上传中 ${uploadDoneCount}/${uploadTotalCount}` : '开始上传' }}</ElButton>
             </template>
         </ElDialog>
 
@@ -183,7 +239,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch, onUnmounted, h} from 'vue';
+import {ref, computed, onMounted, onUnmounted, h} from 'vue';
 import { useProjectStore } from "@/pinia";
 import imageApi, { ImageQiniuRequest } from "@/api/imageQiniuApi.ts";
 import * as qiniu from 'qiniu-js';
@@ -192,18 +248,21 @@ import Toolbar from "@/layout/Toolbar.vue";
 import FooterPagination from "@/layout/FooterPagination.vue";
 import {BucketQiniuMap} from "@/configProject.ts";
 import Content from "@/layout/Content.vue";
-import TableListDate from "@/components/TableListDate.vue";
 import imageQiniuApi from "@/api/imageQiniuApi.ts";
 import { ImageResolutions, } from '@/config/imageResolutions';
-import { ArrowDown } from '@element-plus/icons-vue'
+import { ArrowDown, Close, Upload } from '@element-plus/icons-vue'
 import {ElMessage, ElMessageBox, ElNotification} from "element-plus";
 import {dateFormatter} from "@/utility.ts";
 
+type UploadItemStatus = 'ready' | 'uploading' | 'success' | 'error';
 
-interface ImageForm {
-    files: File[];
-    fileDescriptions: { [key: string]: string };
-    bucket: string;
+interface PendingUploadFile {
+    uid: string;
+    file: File;
+    name: string;
+    description: string;
+    preview: string;
+    status: UploadItemStatus;
 }
 
 interface TableData {
@@ -213,36 +272,37 @@ interface TableData {
     date_create: string;
 }
 
+const UPLOAD_CONCURRENCY = 3;
+const MAX_IMAGE_SIZE = 1024 * 1024 * 10;
+const DEFAULT_BUCKET = 'diary-container';
+
 const projectStore = useProjectStore();
 const isLoading = ref(false);
 const tableData = ref<TableData[]>([]);
 const isShowingModalUpload = ref(false);
 const searchKeyword = ref('');
 const inputUpload = ref<HTMLInputElement | null>(null);
+const pendingFiles = ref<PendingUploadFile[]>([]);
+const isDragOver = ref(false);
+const isUploading = ref(false);
+const uploadDoneCount = ref(0);
+const uploadTotalCount = ref(0);
+const uploadProgress = computed(() => {
+    if (!uploadTotalCount.value) return 0;
+    return Math.min(100, Math.round((uploadDoneCount.value / uploadTotalCount.value) * 100));
+});
 
-
-const currentBucket = ref('diary-container')
-watch(currentBucket, () => {
-    getFileList()
-})
 const currentBucketInfo = computed(() => {
-    return BucketQiniuMap.get(currentBucket.value)
+    return BucketQiniuMap.get(DEFAULT_BUCKET) || BucketQiniuMap.values().next().value;
 })
 
-// Fix TypeScript errors for image URLs and bucket info
 function getSafeImageUrl(id: string, resolution: string) {
     return currentBucketInfo.value ? `${currentBucketInfo.value.baseUrl}/${id}-${resolution}` : '';
 }
 
 function getSafeBucketName() {
-    return currentBucketInfo.value?.bucketName || 'diary-container';
+    return currentBucketInfo.value?.bucketName || DEFAULT_BUCKET;
 }
-
-const formImage = ref<ImageForm>({
-    files: [],
-    fileDescriptions: {},
-    bucket: 'diary-container'
-});
 
 const pager = ref({
     total: 0,
@@ -259,8 +319,6 @@ function pageNoChange(pageNo: number){
     pager.value.pageNo = pageNo
     getFileList()
 }
-
-const previewUrls = ref<{ [key: string]: string }>({});
 
 const selectedRows = ref<TableData[]>([]);
 const lastAnchorIndex = ref(-1);
@@ -327,13 +385,6 @@ async function copyText(text: string) {
     }
 }
 
-// Track failed uploads
-const failedUploads = ref<{fileName: string; description: string}[]>([]);
-
-const handleSelectionChange = (selection: TableData[]) => {
-    selectedRows.value = selection;
-};
-
 function onCardMouseDown(event: MouseEvent) {
     // Shift 框选时避免连带选中文字
     if (event.shiftKey) event.preventDefault();
@@ -395,174 +446,247 @@ const getFileList = () => {
         });
 };
 
+function createPendingUid() {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function defaultDescriptionFromName(fileName: string) {
+    const withoutExt = fileName.split('.').slice(0, -1).join('.');
+    return withoutExt || fileName;
+}
+
+function revokePendingPreviews(files: PendingUploadFile[] = pendingFiles.value) {
+    files.forEach(item => URL.revokeObjectURL(item.preview));
+}
+
+function resetUploadForm() {
+    revokePendingPreviews();
+    pendingFiles.value = [];
+    isDragOver.value = false;
+    isUploading.value = false;
+    uploadDoneCount.value = 0;
+    uploadTotalCount.value = 0;
+    if (inputUpload.value) {
+        inputUpload.value.value = '';
+    }
+}
+
+function clearPendingFiles() {
+    if (isUploading.value) return;
+    revokePendingPreviews();
+    pendingFiles.value = [];
+    if (inputUpload.value) {
+        inputUpload.value.value = '';
+    }
+}
+
+function removePendingFile(uid: string) {
+    if (isUploading.value) return;
+    const index = pendingFiles.value.findIndex(item => item.uid === uid);
+    if (index < 0) return;
+    URL.revokeObjectURL(pendingFiles.value[index].preview);
+    pendingFiles.value.splice(index, 1);
+}
+
+function appendSelectedFiles(fileList: File[]) {
+    const nextItems: PendingUploadFile[] = [];
+    for (const file of fileList) {
+        if (!/image\/.*/.test(file.type)) {
+            ElMessage.warning(`文件 ${file.name} 不是图片文件`);
+            continue;
+        }
+        if (file.size > MAX_IMAGE_SIZE) {
+            ElMessage.warning(`文件 ${file.name} 大小超过 10MB`);
+            continue;
+        }
+        nextItems.push({
+            uid: createPendingUid(),
+            file,
+            name: file.name,
+            description: defaultDescriptionFromName(file.name),
+            preview: URL.createObjectURL(file),
+            status: 'ready',
+        });
+    }
+    if (nextItems.length) {
+        pendingFiles.value.push(...nextItems);
+    }
+}
+
+function triggerFileSelect() {
+    if (isUploading.value) return;
+    inputUpload.value?.click();
+}
+
+function onDragEnter() {
+    if (!isUploading.value) isDragOver.value = true;
+}
+
+function onDragOver() {
+    if (!isUploading.value) isDragOver.value = true;
+}
+
+function onDragLeave() {
+    isDragOver.value = false;
+}
+
+function onDropFiles(event: DragEvent) {
+    isDragOver.value = false;
+    if (isUploading.value) return;
+    const files = Array.from(event.dataTransfer?.files || []);
+    if (files.length) appendSelectedFiles(files);
+}
+
 const addNewImage = () => {
+    resetUploadForm();
     isShowingModalUpload.value = true;
 };
 
-
 function inputFileChange(event: Event) {
     const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-        const files = Array.from(input.files);
-        const validFiles = files.filter(file => {
-            if (!/image\/.*/.test(file.type)) {
-                ElMessage.warning(`文件 ${file.name} 不是图片文件`);
-                return false;
-            }
-            if (file.size > 1024 * 1024 * 10) {
-                ElMessage.warning(`文件 ${file.name} 大小超过10MB`);
-                return false;
-            }
-            return true;
+    if (!input.files?.length) return;
+    appendSelectedFiles(Array.from(input.files));
+    input.value = '';
+}
+
+function qiniuUploadFile(file: File, token: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        qiniu.upload(file, null, token, {}, {}).subscribe({
+            next: () => {},
+            error: (err: unknown) => reject(err),
+            complete: (res: { key: string }) => resolve(res.key),
         });
-        
-        // Clean up old preview URLs
-        Object.values(previewUrls.value).forEach(url => URL.revokeObjectURL(url));
-        previewUrls.value = {};
-        
-        // Create new preview URLs
-        validFiles.forEach(file => {
-            previewUrls.value[file.name] = URL.createObjectURL(file);
-        });
-        
-        formImage.value.files = validFiles;
-        // Initialize descriptions for new files
-        validFiles.forEach(file => {
-            if (!formImage.value.fileDescriptions[file.name]) {
-                // Use file name without extension as default description
-                const fileName = file.name.split('.').slice(0, -1).join('.');
-                formImage.value.fileDescriptions[file.name] = fileName || file.name;
-            }
-        });
+    });
+}
+
+async function registerUploadedImage(content: ImageQiniuRequest) {
+    await imageQiniuApi.add(content);
+}
+
+async function uploadSinglePendingFile(item: PendingUploadFile, token: string, bucket: string) {
+    item.status = 'uploading';
+    try {
+        const key = await qiniuUploadFile(item.file, token);
+        await registerUploadedImage({
+            id: key,
+            type: 'image',
+            bucket,
+            description: item.description,
+        } as ImageQiniuRequest);
+        item.status = 'success';
+        return null;
+    } catch (err) {
+        console.error('Upload error for file:', item.name, err);
+        item.status = 'error';
+        return {
+            fileName: item.name,
+            description: item.description || '',
+        };
+    } finally {
+        uploadDoneCount.value += 1;
     }
 }
 
-// 上传文件
-function fileUpload() {
-    if (formImage.value.files.length === 0) {
+async function runWithConcurrency<T>(items: T[], limit: number, worker: (item: T) => Promise<void>) {
+    let cursor = 0;
+    const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+        while (cursor < items.length) {
+            const current = items[cursor++];
+            await worker(current);
+        }
+    });
+    await Promise.all(runners);
+}
+
+// 上传文件：同一 bucket 复用 token，有限并发上传，整批结束后再关窗刷新
+async function fileUpload() {
+    if (pendingFiles.value.length === 0) {
         ElMessage.warning('请先选择文件');
         return;
     }
+    if (isUploading.value) return;
 
-    // Reset failed uploads
-    failedUploads.value = [];
-    
-    const uploadNextFile = (index: number) => {
-        if (index >= formImage.value.files.length) {
-            // All files uploaded
-            isShowingModalUpload.value = false;
-            
-            // Show failed uploads notification if any
-            if (failedUploads.value.length > 0) {
-                console.log('Failed uploads:', failedUploads.value);
-                ElNotification({
-                    title: `${failedUploads.value.length} 个文件上传失败`,
-                    message: h('div', { class: 'failed-uploads-notification' }, [
-                        h('table', { class: 'failed-uploads-table' }, [
-                            h('thead', {}, [
-                                h('tr', {}, [
-                                    h('th', {}, '文件名'),
-                                    h('th', {}, '描述')
-                                ])
-                            ]),
-                            h('tbody', {}, failedUploads.value.map(item => 
-                                h('tr', {}, [
-                                    h('td', {}, item.fileName),
-                                    h('td', {}, item.description)
-                                ])
-                            ))
-                        ])
-                    ]),
-                    type: 'error',
-                    duration: 0, // Don't auto dismiss
-                    showClose: true
-                });
-            } else {
-                console.log('No failed uploads');
-                ElNotification({
-                    title: '上传完成',
-                    message: `所有 ${formImage.value.files.length} 个文件上传成功`,
-                    type: 'success',
-                    duration: 3000
-                });
-            }
-            
-            formImage.value = {
-                files: [],
-                fileDescriptions: {},
-                bucket: getSafeBucketName()
-            };
-            getFileList();
-            return;
+    const bucket = getSafeBucketName();
+    const queue = pendingFiles.value.filter(item => item.status !== 'success');
+    if (!queue.length) {
+        ElMessage.info('没有待上传的文件');
+        return;
+    }
+
+    queue.forEach(item => {
+        item.status = 'ready';
+    });
+    isUploading.value = true;
+    uploadDoneCount.value = 0;
+    uploadTotalCount.value = queue.length;
+
+    const failedUploads: { fileName: string; description: string }[] = [];
+
+    try {
+        const tokenRes: any = await imageQiniuApi.getUploadToken({
+            bucket,
+            hahaha: true,
+        });
+        const token = tokenRes.data;
+        if (!token) {
+            throw new Error('empty upload token');
         }
 
-        const currentFile = formImage.value.files[index];
-        
-        imageQiniuApi
-            .getUploadToken({
-                bucket: formImage.value.bucket,
-                hahaha: true
-            })
-            .then(res => {
-                const observer = {
-                    next: (res: any) => {
-                        // Upload progress
-                    },
-                    error: (err: any) => {
-                        console.error('Upload error for file:', currentFile.name, err);
-                        // Record failed upload
-                        failedUploads.value.push({
-                            fileName: currentFile.name,
-                            description: formImage.value.fileDescriptions[currentFile.name] || ''
-                        });
-                        console.log('Added to failed uploads:', failedUploads.value);
-                        ElMessage.error(`文件 ${currentFile.name} 上传失败`);
-                        uploadNextFile(index + 1);
-                    },
-                    complete: (res: any) => {
-                        fileNewSubmit({
-                            id: res.key,
-                            type: 'image',
-                            bucket: formImage.value.bucket,
-                            description: formImage.value.fileDescriptions[currentFile.name],
-                        });
-                        uploadNextFile(index + 1);
-                    }
-                };
+        await runWithConcurrency(queue, UPLOAD_CONCURRENCY, async (item) => {
+            const failed = await uploadSinglePendingFile(item, token, bucket);
+            if (failed) failedUploads.push(failed);
+        });
 
-                const observable = qiniu.upload(currentFile, null, res.data, {}, {});
-                observable.subscribe(observer);
-            })
-            .catch(err => {
-                console.error('Token error for file:', currentFile.name, err);
-                // Record failed upload due to token error
-                failedUploads.value.push({
-                    fileName: currentFile.name,
-                    description: formImage.value.fileDescriptions[currentFile.name] || ''
-                });
-                console.log('Added to failed uploads (token error):', failedUploads.value);
-                ElMessage.error(`获取上传凭证失败`);
-                uploadNextFile(index + 1);
-            });
-    };
-
-    uploadNextFile(0);
-}
-// 新增
-function fileNewSubmit(content: ImageQiniuRequest) {
-    imageQiniuApi
-        .add(content)
-        .then((res: any) => {
+        if (failedUploads.length > 0) {
             ElNotification({
-                title: res.message,
-                position: 'top-right',
+                title: `${failedUploads.length} 个文件上传失败`,
+                message: h('div', { class: 'failed-uploads-notification' }, [
+                    h('table', { class: 'failed-uploads-table' }, [
+                        h('thead', {}, [
+                            h('tr', {}, [
+                                h('th', {}, '文件名'),
+                                h('th', {}, '描述')
+                            ])
+                        ]),
+                        h('tbody', {}, failedUploads.map(item =>
+                            h('tr', {}, [
+                                h('td', {}, item.fileName),
+                                h('td', {}, item.description)
+                            ])
+                        ))
+                    ])
+                ]),
+                type: 'error',
+                duration: 0,
+                showClose: true
+            });
+            // 保留失败项，方便改描述后重试
+            const keep = pendingFiles.value.filter(item => item.status === 'error');
+            const drop = pendingFiles.value.filter(item => item.status !== 'error');
+            revokePendingPreviews(drop);
+            pendingFiles.value = keep.map(item => ({ ...item, status: 'ready' as UploadItemStatus }));
+        } else {
+            ElNotification({
+                title: '上传完成',
+                message: `全部 ${queue.length} 个文件上传成功`,
                 type: 'success',
-                onClose() {
-                }
-            })
-            isShowingModalUpload.value = false
-            getFileList()
-        })
+                duration: 3000
+            });
+            isShowingModalUpload.value = false;
+            resetUploadForm();
+        }
+        getFileList();
+    } catch (err) {
+        console.error('Batch upload failed:', err);
+        ElMessage.error('获取上传凭证失败，请重试');
+        queue.forEach(item => {
+            if (item.status === 'ready' || item.status === 'uploading') {
+                item.status = 'error';
+            }
+        });
+    } finally {
+        isUploading.value = false;
+    }
 }
 
 const goDelete = (rows: TableData[]) => {
@@ -629,8 +753,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-    // Clean up preview URLs
-    Object.values(previewUrls.value).forEach(url => URL.revokeObjectURL(url));
+    revokePendingPreviews();
 });
 
 const isShowingEditDialog = ref(false);
@@ -713,43 +836,147 @@ const submitEdit = () => {
     }
 }
 
-.file-description-item {
-    margin-bottom: 15px;
+.upload-dialog {
     display: flex;
-    gap: 15px;
-    align-items: flex-start;
-    
-    .file-preview {
-        width: 120px;
-        min-width: 120px;
-        border-radius: 4px;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.upload-dropzone {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 132px;
+    padding: 20px 16px;
+    border: 1.5px dashed #c0c4cc;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #fafbfd 0%, #f3f5f8 100%);
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+
+    &:hover:not(.is-disabled),
+    &.is-dragover {
+        border-color: #409eff;
+        background: linear-gradient(180deg, #f0f7ff 0%, #e8f3ff 100%);
+        box-shadow: inset 0 0 0 1px rgba(64, 158, 255, 0.15);
+    }
+
+    &.is-disabled {
+        cursor: not-allowed;
+        opacity: 0.72;
+    }
+
+    &__input {
+        display: none;
+    }
+
+    &__icon {
+        color: #409eff;
+        margin-bottom: 2px;
+    }
+
+    &__title {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: #303133;
+    }
+
+    &__hint {
+        margin: 0;
+        font-size: 12px;
+        color: #909399;
+    }
+}
+
+.upload-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #606266;
+}
+
+.upload-file-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+    max-height: 360px;
+    overflow-y: auto;
+    padding: 2px;
+}
+
+.upload-file-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    &__thumb {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 8px;
         overflow: hidden;
-        border: 1px solid #dcdfe6;
+        border: 1px solid #e4e7ed;
         background: #f5f7fa;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+    }
+
+    &__remove {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 22px;
+        height: 22px;
+        border: none;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.55);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+
+        &:hover {
+            background: rgba(245, 108, 108, 0.95);
+        }
+    }
+
+    &__mask {
+        position: absolute;
+        inset: 0;
         display: flex;
         align-items: center;
         justify-content: center;
-        
-        .preview-image {
-            max-width: 100%;
-            max-height: 120px;
-            object-fit: contain;
+        background: rgba(0, 0, 0, 0.45);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+
+        &.is-success {
+            background: rgba(103, 194, 58, 0.72);
+        }
+
+        &.is-error {
+            background: rgba(245, 108, 108, 0.78);
         }
     }
-    
-    .file-info {
-        flex: 1;
-        min-width: 0;
-        
-        .file-name {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 8px;
-            word-break: break-all;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+
+    &.is-error .upload-file-card__thumb {
+        border-color: #f56c6c;
+    }
+
+    &.is-success .upload-file-card__thumb {
+        border-color: #67c23a;
     }
 }
 
