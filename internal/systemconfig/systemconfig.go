@@ -53,7 +53,7 @@ var defaultConfig = SystemConfig{
 	DemoAccount:               "test@163.com",
 	DemoAccountPassword:       "test",
 	InvitationCode:            "",
-	QiniuImgBaseURL:           "http://diary-container.kylebing.cn/",
+	QiniuImgBaseURL:           "https://diary-container.kylebing.cn/",
 	QiniuBucketName:           "diary-container",
 	QiniuStyleSuffix:          "thumbnail_600px",
 	QiniuAccessKey:            "",

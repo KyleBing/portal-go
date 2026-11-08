@@ -1,6 +1,6 @@
 const BucketQiniuMap = new Map<string, BucketInfo>([
     ['diary-container', {
-        baseUrl: 'http://diary-container.kylebing.cn', // 空间域名，最后面不带 `/`
+        baseUrl: 'https://diary-container.kylebing.cn', // 空间域名，最后面不带 `/`
         bucketName: 'diary-container', // 七牛云对象存储空间的名称
         suffiex_thumbnail: 'thumbnail_50px',
         suffiex: 'thumbnail_1000px',
