@@ -46,8 +46,7 @@
                             <ElDropdownItem
                                 v-for="copyOption in copyOptions"
                                 :key="`batch-${copyOption.key}`"
-                                class="clipboard"
-                                :data-clipboard="getBatchClipboardText(copyOption)">
+                                @click="copyText(getBatchClipboardText(copyOption))">
                                 {{ copyOption.label }}
                             </ElDropdownItem>
                         </ElDropdownMenu>
@@ -85,9 +84,9 @@
                                     icon="CopyDocument"
                                     text
                                     plain
-                                    class="clipboard copy-split__main"
-                                    :data-clipboard="item.id"
+                                    class="copy-split__main"
                                     title="复制图片标识"
+                                    @click="copyText(item.id)"
                                 />
                                 <ElDropdown trigger="click" placement="bottom-end" popper-class="copy-dropdown-compact">
                                     <ElButton size="small" type="info" text plain class="copy-split__caret">
@@ -98,14 +97,12 @@
                                             <ElDropdownItem
                                                 v-for="(resolution, key) in ImageResolutions"
                                                 :key="key"
-                                                class="clipboard"
-                                                :data-clipboard="`${currentBucketInfo?.baseUrl}/${item.id}-${resolution.name}`"
+                                                @click="copyText(`${currentBucketInfo?.baseUrl}/${item.id}-${resolution.name}`)"
                                             >
                                                 {{ resolution.name }}
                                             </ElDropdownItem>
                                             <ElDropdownItem
-                                                class="clipboard"
-                                                :data-clipboard="`${currentBucketInfo?.baseUrl}/${item.id}`"
+                                                @click="copyText(`${currentBucketInfo?.baseUrl}/${item.id}`)"
                                             >
                                                 原图
                                             </ElDropdownItem>
@@ -190,7 +187,6 @@ import {ref, computed, onMounted, watch, onUnmounted, h} from 'vue';
 import { useProjectStore } from "@/pinia";
 import imageApi, { ImageQiniuRequest } from "@/api/imageQiniuApi.ts";
 import * as qiniu from 'qiniu-js';
-import ClipboardJS from 'clipboard';
 import Container from "@/layout/Container.vue";
 import Toolbar from "@/layout/Toolbar.vue";
 import FooterPagination from "@/layout/FooterPagination.vue";
@@ -315,6 +311,20 @@ function getBatchClipboardText(option: { mode: 'resolution' | 'origin' | 'id'; r
             return path;
         })
         .join('\n');
+}
+
+async function copyText(text: string) {
+    const value = String(text || '').trim();
+    if (!value) {
+        ElMessage.warning('没有可复制的内容');
+        return;
+    }
+    try {
+        await navigator.clipboard.writeText(value);
+        ElMessage.success('复制成功');
+    } catch {
+        ElMessage.error('复制失败，请手动复制');
+    }
 }
 
 // Track failed uploads
@@ -614,27 +624,11 @@ const goBatchDelete = () => {
     });
 };
 
-let clipboard: ClipboardJS | null = null;
 onMounted(() => {
     getFileList();
-    // 绑定剪贴板操作方法
-    clipboard = new ClipboardJS('.clipboard', {
-        text: trigger => {
-            return trigger.getAttribute('data-clipboard') || '';
-        },
-    });
-    clipboard.on('success', () => {
-        ElMessage.success('复制成功');
-    });
-    clipboard.on('error', () => {
-        ElMessage.error('复制失败，请手动复制');
-    });
 });
 
 onUnmounted(() => {
-    if (clipboard) {
-        clipboard.destroy();
-    }
     // Clean up preview URLs
     Object.values(previewUrls.value).forEach(url => URL.revokeObjectURL(url));
 });
