@@ -76,9 +76,8 @@ func handleAdd(c *gin.Context) {
 		response.Error(c, "", "点赞信息名已存在")
 		return
 	}
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -98,9 +97,8 @@ func handleAdd(c *gin.Context) {
 }
 
 func handleModify(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -132,9 +130,8 @@ func handleModify(c *gin.Context) {
 }
 
 func handleDelete(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {

@@ -73,8 +73,7 @@ func handleToken(c *gin.Context) {
 		return
 	}
 	if c.Query("hahaha") == "" {
-		if _, msg := middleware.VerifyAuthorization(c); msg != "" {
-			response.Error(c, "", msg)
+		if _, ok := middleware.RequireUser(c); !ok {
 			return
 		}
 	}
@@ -87,9 +86,8 @@ func handleToken(c *gin.Context) {
 }
 
 func handleList(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, msg, "无权查看文件列表：用户信息错误")
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	var filters []string
@@ -141,9 +139,8 @@ func handleList(c *gin.Context) {
 }
 
 func handleAdd(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -171,9 +168,8 @@ func handleAdd(c *gin.Context) {
 }
 
 func handleDelete(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -208,9 +204,8 @@ func handleDelete(c *gin.Context) {
 }
 
 func handleBatchDelete(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -258,9 +253,8 @@ func handleBatchDelete(c *gin.Context) {
 }
 
 func handleUpdate(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {

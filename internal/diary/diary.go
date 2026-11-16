@@ -124,9 +124,8 @@ func decodeDiaryRow(row map[string]interface{}, unescape bool, withBill bool) {
 }
 
 func handleList(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	pageNo := util.AtoiDefault(c.Query("pageNo"), 1)
@@ -152,9 +151,8 @@ func handleList(c *gin.Context) {
 }
 
 func handleListAll(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	filterSQL, args := buildFilter(c)
@@ -174,9 +172,8 @@ func handleListAll(c *gin.Context) {
 }
 
 func handleListTitleOnly(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	filterSQL, args := buildFilter(c)
@@ -198,9 +195,8 @@ func handleListTitleOnly(c *gin.Context) {
 }
 
 func handleListCategoryOnly(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	filterSQL, args := buildFilter(c)
@@ -217,9 +213,8 @@ func handleListCategoryOnly(c *gin.Context) {
 }
 
 func handleExport(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", "无权查看日记列表：用户信息错误")
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	filterSQL, args := buildFilter(c)
@@ -239,9 +234,8 @@ func handleExport(c *gin.Context) {
 }
 
 func handleTemperature(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	var sqlBuf string
@@ -297,9 +291,8 @@ func handleDetail(c *gin.Context) {
 		response.Success(c, row, "")
 		return
 	}
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if user.UID == asInt(row["uid"]) {
@@ -311,9 +304,8 @@ func handleDetail(c *gin.Context) {
 }
 
 func handleAdd(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	var body struct {
@@ -344,9 +336,8 @@ func handleAdd(c *gin.Context) {
 }
 
 func handleModify(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	var body struct {
@@ -381,9 +372,8 @@ func handleModify(c *gin.Context) {
 }
 
 func handleDelete(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	var body struct {
@@ -422,9 +412,8 @@ func handleLatestRecommend(c *gin.Context) {
 }
 
 func handleGetContentWithKeyword(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	encoded := util.UnicodeEncode(c.Query("keyword"))
@@ -460,9 +449,8 @@ func handleGetLatestPublicWithKeyword(c *gin.Context) {
 }
 
 func handleClear(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, msg, "无权查看日记列表：用户信息错误")
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if systemconfig.IsConfiguredDemoAccountEmail(user.Email) {

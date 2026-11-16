@@ -224,9 +224,8 @@ func handleInfo(c *gin.Context, table string) {
 }
 
 func handleAdd(c *gin.Context, e entityWrite) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -275,9 +274,8 @@ func handleAdd(c *gin.Context, e entityWrite) {
 }
 
 func handleModify(c *gin.Context, e entityWrite) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -321,9 +319,8 @@ func handleModify(c *gin.Context, e entityWrite) {
 }
 
 func handleDelete(c *gin.Context, table string) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {

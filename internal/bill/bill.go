@@ -114,9 +114,8 @@ func Register(r *gin.RouterGroup) {
 }
 
 func handleAll(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	diary, _ := db.Open(dbName)
@@ -161,9 +160,8 @@ func handleSorted(c *gin.Context) {
 		response.Error(c, "", "未选择年份")
 		return
 	}
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	keywords := splitKeywords(c)
@@ -289,9 +287,8 @@ func getBillMonthTop5(days []BillDay) top5Result {
 }
 
 func handleKeys(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	currentYear := time.Now().Year()
@@ -326,9 +323,8 @@ func handleKeys(c *gin.Context) {
 }
 
 func handleDaySum(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	diary, _ := db.Open(dbName)
@@ -352,9 +348,8 @@ func handleDaySum(c *gin.Context) {
 }
 
 func handleMonthSum(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	keywords := splitKeywords(c)
@@ -403,9 +398,8 @@ func handleMonthSum(c *gin.Context) {
 }
 
 func handleBorrow(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	diary, _ := db.Open(dbName)

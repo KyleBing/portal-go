@@ -148,9 +148,8 @@ func handleSubmit(c *gin.Context) {
 }
 
 func handleManage(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, errMsg, errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -225,9 +224,8 @@ func handleManage(c *gin.Context) {
 }
 
 func handleDetail(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, errMsg, errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -263,9 +261,8 @@ func handleDetail(c *gin.Context) {
 }
 
 func handleApprove(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, errMsg, errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -324,9 +321,8 @@ func handleApprove(c *gin.Context) {
 }
 
 func handleReject(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, errMsg, errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -367,9 +363,8 @@ func handleReject(c *gin.Context) {
 }
 
 func handleDelete(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, errMsg, errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {

@@ -549,9 +549,8 @@ func infoHandler(ic infoConfig) gin.HandlerFunc {
 
 func addHandler(e entity) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		user, msg := middleware.VerifyAuthorization(c)
-		if msg != "" {
-			response.Error(c, "", msg)
+		user, ok := middleware.RequireUser(c)
+		if !ok {
 			return
 		}
 		m := apihelper.Body(c)
@@ -627,9 +626,8 @@ func addHandler(e entity) gin.HandlerFunc {
 
 func modifyHandler(e entity) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		user, msg := middleware.VerifyAuthorization(c)
-		if msg != "" {
-			response.Error(c, "", msg)
+		user, ok := middleware.RequireUser(c)
+		if !ok {
 			return
 		}
 		m := apihelper.Body(c)
@@ -716,9 +714,8 @@ func modifyHandler(e entity) gin.HandlerFunc {
 
 func deleteHandler(e entity) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		user, msg := middleware.VerifyAuthorization(c)
-		if msg != "" {
-			response.Error(c, "", msg)
+		user, ok := middleware.RequireUser(c)
+		if !ok {
 			return
 		}
 		m := apihelper.Body(c)

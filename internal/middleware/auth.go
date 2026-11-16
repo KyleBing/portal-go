@@ -14,15 +14,24 @@ const ContextUserKey = "authUser"
 
 func AuthRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		user, errMsg := VerifyAuthorization(c)
-		if errMsg != "" {
-			response.Error(c, "", errMsg)
+		user, ok := RequireUser(c)
+		if !ok {
 			c.Abort()
 			return
 		}
 		c.Set(ContextUserKey, user)
 		c.Next()
 	}
+}
+
+// RequireUser 校验 token；失败时写入 401 unauthorized，返回 ok=false。
+func RequireUser(c *gin.Context) (*models.User, bool) {
+	user, errMsg := VerifyAuthorization(c)
+	if errMsg != "" {
+		response.Unauthorized(c, errMsg)
+		return nil, false
+	}
+	return user, true
 }
 
 func OptionalAuth() gin.HandlerFunc {

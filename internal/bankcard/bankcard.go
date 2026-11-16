@@ -16,9 +16,8 @@ func Register(r *gin.RouterGroup) {
 }
 
 func handleGet(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, "", errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	diary, err := db.Open(db.Diary)

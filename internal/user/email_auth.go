@@ -202,7 +202,11 @@ func handleReset(c *gin.Context) {
 // POST /user/force-verify { uid } — 管理员强制标记邮箱已验证。
 func handleForceVerify(c *gin.Context) {
 	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" || user == nil || !user.IsAdmin() {
+	if errMsg != "" {
+		response.Unauthorized(c, errMsg)
+		return
+	}
+	if user == nil || !user.IsAdmin() {
 		response.Error(c, "", "无权操作")
 		return
 	}
@@ -234,7 +238,11 @@ func handleForceVerify(c *gin.Context) {
 // POST /user/send-reset-password { uid } — 管理员向指定用户发送重置密码邮件。
 func handleAdminSendReset(c *gin.Context) {
 	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" || user == nil || !user.IsAdmin() {
+	if errMsg != "" {
+		response.Unauthorized(c, errMsg)
+		return
+	}
+	if user == nil || !user.IsAdmin() {
 		response.Error(c, "", "无权操作")
 		return
 	}

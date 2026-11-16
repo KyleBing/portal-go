@@ -25,9 +25,8 @@ func Register(r *gin.RouterGroup) {
 }
 
 func handleOverview(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	diary, _ := db.Open(dbName)
@@ -57,9 +56,8 @@ func handleOverview(c *gin.Context) {
 }
 
 func handleUserDataDiary(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -76,9 +74,8 @@ func handleUserDataDiary(c *gin.Context) {
 }
 
 func handleCategory(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	diary, _ := db.Open(dbName)
@@ -102,9 +99,8 @@ func handleCategory(c *gin.Context) {
 }
 
 func handleYear(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	diary, _ := db.Open(dbName)
@@ -152,9 +148,8 @@ func handleYear(c *gin.Context) {
 // handleManagerUsers returns active-ish users for the manager statistics page.
 // Admin only. Replaces the old diary-facing GET /statistic/users.
 func handleManagerUsers(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -198,9 +193,8 @@ func handleManagerUsers(c *gin.Context) {
 }
 
 func handleWeather(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	diary, _ := db.Open(dbName)

@@ -153,9 +153,8 @@ func deleteRow(c *gin.Context, table string) {
 }
 
 func requireAdmin(c *gin.Context) bool {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return false
 	}
 	if user == nil || !user.IsAdmin() {
@@ -248,6 +247,42 @@ func asMap(v interface{}) map[string]interface{} {
 		return m
 	}
 	return map[string]interface{}{}
+}
+
+func hasScreenPx(screen map[string]interface{}) bool {
+	return asFloat(screen["pxW"]) > 0 && asFloat(screen["pxH"]) > 0
+}
+
+// Duo 旧数据把内屏 7.6"/1878×2670 写在 screen 上，应换成外屏。
+func shouldUseDuoCoverScreen(current, seed map[string]interface{}) bool {
+	if !hasScreenPx(seed) {
+		return false
+	}
+	if !hasScreenPx(current) {
+		return true
+	}
+	inch := asFloat(current["inch"])
+	pxW := asFloat(current["pxW"])
+	pxH := asFloat(current["pxH"])
+	return inch >= 7 || (pxW == 1878 && pxH == 2670)
+}
+
+func asFloat(v interface{}) float64 {
+	switch val := v.(type) {
+	case float64:
+		return val
+	case float32:
+		return float64(val)
+	case int:
+		return float64(val)
+	case int64:
+		return float64(val)
+	case json.Number:
+		f, _ := val.Float64()
+		return f
+	default:
+		return 0
+	}
 }
 
 func setIfEmpty(item map[string]interface{}, key string, value interface{}) bool {
@@ -521,11 +556,23 @@ func fillMissingDeviceSpecs() error {
 		keys := []string{
 			"chip", "cpuRate", "cpuCore", "cpuBit", "memoryGb", "memoryType", "battery", "batteryUnit",
 			"material", "water", "duration", "caseMm", "dust", "cellular", "wifi", "bluetooth", "uwb",
-			"heart", "gps", "accel", "gyro", "altimeter", "osFrom", "osTo", "unsupported", "require",
+			"heart", "gps", "gpsNote", "accel", "gyro", "altimeter", "osFrom", "osTo", "unsupported", "require",
 			"chargeTime", "port", "image", "connect", "charge", "unlock", "pencil", "hardware", "models",
+			"sim", "cameras", "lidar", "camera", "sizeOpen", "screenOpen",
 		}
 		for _, key := range keys {
 			changed = setIfEmpty(item, key, seed[key]) || changed
+		}
+		// Duo：补展开分辨率，并把误放在 screen 里的内屏挪到 screenOpen。
+		if asString(item["name"]) == "iPhone Duo" && seed != nil {
+			if seed["screenOpen"] != nil && (isEmptyValue(item["screenOpen"]) || !hasScreenPx(asMap(item["screenOpen"]))) {
+				item["screenOpen"] = seed["screenOpen"]
+				changed = true
+			}
+			if seed["screen"] != nil && shouldUseDuoCoverScreen(asMap(item["screen"]), asMap(seed["screen"])) {
+				item["screen"] = seed["screen"]
+				changed = true
+			}
 		}
 		if asString(item["family"]) == "watch" && seed["osTo"] != nil && asString(item["osTo"]) == "9.3.1" {
 			item["osTo"] = seed["osTo"]

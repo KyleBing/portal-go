@@ -52,9 +52,8 @@ func handleUpload(c *gin.Context) {
 		response.Error(c, err.Error(), "未找到上传文件")
 		return
 	}
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, msg, "无权操作")
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	name := filepath.Base(fileHeader.Filename)
@@ -117,9 +116,8 @@ func handleUpload(c *gin.Context) {
 }
 
 func handleModify(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	var body struct {
@@ -138,9 +136,8 @@ func handleModify(c *gin.Context) {
 }
 
 func handleDelete(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	var body struct {
@@ -176,9 +173,8 @@ func handleDelete(c *gin.Context) {
 }
 
 func handleList(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	pageNo := util.AtoiDefault(c.Query("pageNo"), 1)
@@ -215,9 +211,8 @@ func handleList(c *gin.Context) {
 }
 
 func handleDownload(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	fileID, err := strconv.ParseInt(c.Query("fileId"), 10, 64)

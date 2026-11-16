@@ -1,6 +1,7 @@
 import axios from "axios";
 import {ElLoading, ElMessage} from "element-plus";
-import {getAuthorization, updateAuthorizationToken} from "@/utility.ts";
+import {deleteAuthorization, getAuthorization, updateAuthorizationToken} from "@/utility.ts";
+import {router} from "@/router";
 
 
 const LOADING_OPTION = {
@@ -11,6 +12,8 @@ const LOADING_OPTION = {
 
 const BASE_URL = '/portal' // absolute API prefix; paths already start with '/'
 const RENEWED_TOKEN_HEADER = 'x-access-token'
+
+let handlingAuthExpired = false
 
 function joinURL(base: string, path: string) {
     const b = base.replace(/\/+$/, '')
@@ -27,6 +30,36 @@ function applyRenewedToken(headers: Record<string, unknown> | undefined) {
     const token = Array.isArray(raw) ? raw[0] : raw
     if (typeof token === 'string' && token) {
         updateAuthorizationToken(token)
+    }
+}
+
+function isUnauthorizedPayload(data: unknown): boolean {
+    if (!data || typeof data !== 'object') {
+        return false
+    }
+    const body = data as { code?: string; message?: string }
+    if (body.code === 'unauthorized') {
+        return true
+    }
+    const message = body.message || ''
+    return message.includes('token') || message.includes('身份验证失败') || message === '无 token'
+}
+
+function handleAuthExpired(message?: string) {
+    if (handlingAuthExpired) {
+        return
+    }
+    handlingAuthExpired = true
+    deleteAuthorization()
+    ElMessage.error({
+        message: message || '登录已失效，请重新登录'
+    })
+    if (router.currentRoute.value.name !== 'Login') {
+        router.push({name: 'Login'}).finally(() => {
+            handlingAuthExpired = false
+        })
+    } else {
+        handlingAuthExpired = false
     }
 }
 
@@ -80,22 +113,37 @@ function request(
                     if (res.data.success){
                         resolve(res.data)
                     } else {
-                        ElMessage.error({
-                            message: res.data.message || 'Error'
-                        })
+                        if (isUnauthorizedPayload(res.data)) {
+                            handleAuthExpired(res.data.message)
+                        } else {
+                            ElMessage.error({
+                                message: res.data.message || 'Error'
+                            })
+                        }
                         reject(res.data)
                     }
+                } else if (res.status === 401 || isUnauthorizedPayload(res.data)) {
+                    handleAuthExpired(res.data?.message)
+                    reject(res.data)
                 } else {
                     console.log('request err: ', res.data) // 如果演示模式，不用显示网络请求错误
+                    reject(res.data)
                 }
             })
             .catch(err => {
-                reject(err)
                 if (showLoading) layerLoading.close()
+                const status = err.response?.status
+                const data = err.response?.data
+                if (status === 401 || isUnauthorizedPayload(data)) {
+                    handleAuthExpired(data?.message)
+                    reject(data || err)
+                    return
+                }
                 ElMessage.error({
-                    message: err.message
+                    message: data?.message || err.message
                 })
                 console.log(err, err.message)
+                reject(err)
             })
     })
 }

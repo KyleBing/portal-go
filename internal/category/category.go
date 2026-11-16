@@ -51,9 +51,8 @@ func handleAdd(c *gin.Context) {
 		response.Error(c, "", dataName+"已存在")
 		return
 	}
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, "", errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -67,9 +66,8 @@ func handleAdd(c *gin.Context) {
 }
 
 func handleModify(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, "", errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -88,9 +86,8 @@ func handleModify(c *gin.Context) {
 }
 
 func handleDelete(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, "", errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {

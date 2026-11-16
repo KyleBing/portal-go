@@ -120,9 +120,8 @@ func handleDetail(c *gin.Context) {
 		response.Success(c, row, "")
 		return
 	}
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if asInt(row["uid"]) == user.UID || user.IsAdmin() {
@@ -133,9 +132,8 @@ func handleDetail(c *gin.Context) {
 }
 
 func handleAdd(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	var body struct {
@@ -169,9 +167,8 @@ func handleAdd(c *gin.Context) {
 }
 
 func handleModify(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", "查无此路线")
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	var body struct {
@@ -206,9 +203,8 @@ func handleModify(c *gin.Context) {
 }
 
 func handleDelete(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", "查无此路线")
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	var body struct {

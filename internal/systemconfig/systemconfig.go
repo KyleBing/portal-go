@@ -577,9 +577,8 @@ func Register(r *gin.RouterGroup) {
 }
 
 func requireAdmin(c *gin.Context) bool {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, "", errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return false
 	}
 	if !user.IsAdmin() {

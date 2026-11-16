@@ -59,9 +59,8 @@ func handleList(c *gin.Context) {
 // handleManage returns invitation codes for the manager console,
 // including used ones with the bound user profile. Supports pageNo/pageSize.
 func handleManage(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, errMsg, errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -140,9 +139,8 @@ func handleManage(c *gin.Context) {
 }
 
 func handleGenerate(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, errMsg, errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -165,9 +163,8 @@ func handleGenerate(c *gin.Context) {
 }
 
 func handleMarkShared(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, errMsg, errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -189,9 +186,8 @@ func handleDelete(c *gin.Context) {
 		response.Error(c, "", "参数错误，缺少 id")
 		return
 	}
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, errMsg, "无权操作")
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {

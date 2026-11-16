@@ -14,9 +14,8 @@ import (
 )
 
 func handleGetAliases(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	cfg, err := ensureAliasConfig(user.UID)
@@ -28,9 +27,8 @@ func handleGetAliases(c *gin.Context) {
 }
 
 func handlePutAliases(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	var cfg AliasConfig
@@ -46,9 +44,8 @@ func handlePutAliases(c *gin.Context) {
 }
 
 func handleUpload(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	fileHeader, err := c.FormFile("file")
@@ -147,9 +144,8 @@ func handleUpload(c *gin.Context) {
 }
 
 func handlePreview(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	batchID, err := strconv.ParseInt(c.Query("batchId"), 10, 64)
@@ -191,9 +187,8 @@ func handlePreview(c *gin.Context) {
 }
 
 func handleApply(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	var body struct {
@@ -275,9 +270,8 @@ func handleApply(c *gin.Context) {
 }
 
 func handleSeedAliases(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	var body struct {
@@ -332,9 +326,8 @@ func handleSeedAliases(c *gin.Context) {
 }
 
 func handleListBatches(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	pageNo, _ := strconv.Atoi(c.DefaultQuery("pageNo", "1"))
@@ -348,9 +341,8 @@ func handleListBatches(c *gin.Context) {
 }
 
 func handleListOrders(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", msg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	batchID, err := strconv.ParseInt(c.Query("batchId"), 10, 64)

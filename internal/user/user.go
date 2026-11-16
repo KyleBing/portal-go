@@ -183,9 +183,8 @@ func registerUser(c *gin.Context, diary *sql.DB, body map[string]interface{}) {
 }
 
 func handleList(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, "", errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	diary, err := diaryDB()
@@ -250,9 +249,8 @@ func handleDetail(c *gin.Context) {
 		response.Success(c, data, "")
 		return
 	}
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, "", errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if user.UID == apihelper.MapInt(data, "uid") {
@@ -313,9 +311,8 @@ func handleAdd(c *gin.Context) {
 }
 
 func handleSetProfile(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, "", "无权操作")
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if systemconfig.IsConfiguredDemoAccountEmail(user.Email) {
@@ -341,9 +338,8 @@ func handleSetProfile(c *gin.Context) {
 }
 
 func handleModify(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, "", "无权操作")
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	body := apihelper.Body(c)
@@ -370,9 +366,8 @@ func handleModify(c *gin.Context) {
 }
 
 func handleDelete(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, "", "无权操作")
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {
@@ -436,9 +431,8 @@ func handleChangePassword(c *gin.Context) {
 		response.Error(c, "", "参数错误：password 未定义")
 		return
 	}
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, "", "无权操作")
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if systemconfig.IsConfiguredDemoAccountEmail(user.Email) {
@@ -459,9 +453,8 @@ func handleChangePassword(c *gin.Context) {
 }
 
 func handleDestroyAccount(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, "null", errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if systemconfig.IsConfiguredDemoAccountEmail(user.Email) {

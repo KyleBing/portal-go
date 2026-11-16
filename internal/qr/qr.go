@@ -64,9 +64,8 @@ func handleFront(c *gin.Context) {
 }
 
 func handleList(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", "无权查看 QR 列表：用户信息错误")
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	base := `select qrs.hash, qrs.is_public, qrs.is_show_phone, qrs.message, qrs.car_name, qrs.car_plate,
@@ -128,9 +127,8 @@ func handleDetail(c *gin.Context) {
 		response.Success(c, row, "")
 		return
 	}
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", "当前用户无权查看该 QR ：用户信息错误")
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if user.UID == asInt(row["uid"]) {
@@ -161,9 +159,8 @@ type qrBody struct {
 }
 
 func handleAdd(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", "无权操作")
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	var body qrBody
@@ -190,9 +187,8 @@ func handleAdd(c *gin.Context) {
 }
 
 func handleModify(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", "无权操作")
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	var body qrBody
@@ -212,9 +208,8 @@ func handleModify(c *gin.Context) {
 }
 
 func handleDelete(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", "无权操作")
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	var body struct {
@@ -237,9 +232,8 @@ func handleDelete(c *gin.Context) {
 }
 
 func handleClearVisitCount(c *gin.Context) {
-	user, msg := middleware.VerifyAuthorization(c)
-	if msg != "" {
-		response.Error(c, "", "无权操作")
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	if !user.IsAdmin() {

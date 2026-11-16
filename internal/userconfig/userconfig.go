@@ -36,9 +36,8 @@ func Register(r *gin.RouterGroup) {
 }
 
 func handleGet(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, errMsg, errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	cfg, err := getUserConfig(user)
@@ -50,9 +49,8 @@ func handleGet(c *gin.Context) {
 }
 
 func handleSave(c *gin.Context) {
-	user, errMsg := middleware.VerifyAuthorization(c)
-	if errMsg != "" {
-		response.Error(c, errMsg, errMsg)
+	user, ok := middleware.RequireUser(c)
+	if !ok {
 		return
 	}
 	var payload map[string]interface{}
