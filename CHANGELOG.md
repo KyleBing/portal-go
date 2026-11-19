@@ -1,5 +1,15 @@
 # 更新记录
 
+## v1.5.1 `2026-11-19`
+
+- 修复和风响应 gzip 未解压导致 JSON 解析失败（`\x1f`）
+- Manager：**系统配置 → 天气测试**（status / geo / now / daily）
+
+## v1.5.0 `2026-11-19`
+
+- **天气代理** `/portal/weather/*`：服务端用和风 JWT（`QWEATHER_*` 环境变量）或回退系统配置 API Key，代理 `now` / `daily` / `geo`；NOTE4C 等设备只带 Portal 登录 Token
+- 文档与 Manager API 目录同步
+
 ## v1.4.0 `2026-11-03`
 
 - **注册申请**：开放 `registration-application` 提交与管理员审核台账；用户获取邀请码需先支付当前配置金额（默认 ¥28），审核通过后邮件下发邀请码

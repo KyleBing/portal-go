@@ -27,6 +27,7 @@ import (
 	"github.com/KyleBing/portal-go/internal/thumbsup"
 	"github.com/KyleBing/portal-go/internal/user"
 	"github.com/KyleBing/portal-go/internal/userconfig"
+	"github.com/KyleBing/portal-go/internal/weather"
 	"github.com/gin-gonic/gin"
 )
 
@@ -113,4 +114,7 @@ func registerAll(rg *gin.RouterGroup) {
 
 	// 经典 /starve 库已下线，仅保留 starve-new
 	starvenew.Register(rg.Group("/starve-new"))
+
+	// 和风天气代理（服务端 JWT / API Key → 设备与客户端只带 Portal token）
+	weather.Register(rg.Group("/weather"))
 }

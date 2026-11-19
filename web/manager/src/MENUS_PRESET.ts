@@ -451,6 +451,18 @@ const MENUS_PRESET: Array<EntityMenu> = [
                 "isNeedAdminPermission": true,
                 "children": []
             },
+            {
+                "name": "天气测试",
+                "type": EnumMenuType['菜单'],
+                "path": "/system/weather-test",
+                "match_path": "",
+                "component": "System/WeatherTest.vue",
+                "visible": EnumMenuVisible['可见'],
+                "redirect": "",
+                "icon": "Sunny",
+                "isNeedAdminPermission": true,
+                "children": []
+            },
         ]
     }
 ]

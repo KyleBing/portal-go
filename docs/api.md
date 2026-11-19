@@ -68,6 +68,7 @@
 | [文件](#文件-file-manager) | `/file-manager` | 本地上传 |
 | [七牛图床](#七牛图床-image-qiniu) | `/image-qiniu` | Token 与图片元数据 |
 | [点赞](#点赞-thumbs-up) | `/thumbs-up` | 站点点赞计数 |
+| [天气代理](#天气代理-weather) | `/weather` | 和风代理（服务端 JWT/Key） |
 | [安装](#安装-setup--init) | `/setup` `/init` | 首次安装引导 |
 
 鉴权图例：**P** 公开 · **A** 需登录 · **Admin** 管理员 · **Cond** 公开内容可匿名，否则需主人 · **Opt** 有 token 则带身份
@@ -310,6 +311,23 @@ Manager 菜单：**日记 → 支付宝账单**（`#/diary/bill-import`）。
 示例：`GET /portal/starve-new/craft/list?keyword=斧&version=1`
 
 > 经典 `/starve` 已下线，勿再调用。
+
+---
+
+## 天气代理 `/weather`
+
+需登录 **A**。服务端用和风 JWT（环境变量）或回退 `system_config` 的 API Key 请求和风，客户端**不要**再带和风 Key。
+
+| 方法 | 路径 | 鉴权 | 说明 |
+|------|------|------|------|
+| GET | `/status` | A | 是否已配置；`data.auth`=`jwt`/`api_key`/`none`，不含密钥 |
+| GET | `/now` | A | Query `location`（LocationID 或 `lon,lat`）→ 实况 |
+| GET | `/daily` | A | Query `location`，`days`=`7d`/`15d`（也可 `7`/`15`） |
+| GET | `/geo` | A | Query `location`=城市名，`number` 默认 10；默认 `range=cn` |
+
+`data` 为和风原始 JSON（含 `code` / `now` / `daily` / `location`）。
+
+服务端环境变量：`QWEATHER_HOST`、`QWEATHER_KID`、`QWEATHER_ISS`、`QWEATHER_SUB`、`QWEATHER_PRIVATE_KEY` 或 `QWEATHER_PRIVATE_KEY_FILE`。未配 JWT 时用系统配置 `hefeng_weather_api_host` + `hefeng_weather_api_key`。
 
 ---
 

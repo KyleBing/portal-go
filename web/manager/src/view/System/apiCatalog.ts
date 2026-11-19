@@ -88,6 +88,18 @@ export const API_MODULES: ApiModule[] = [
         ],
     },
     {
+        id: 'weather',
+        name: '天气代理',
+        prefix: '/weather',
+        description: '和风天气服务端代理（JWT 或 API Key）；客户端只带 Portal token',
+        endpoints: [
+            { method: 'GET', path: '/weather/status', auth: 'A', summary: '是否已配置（不含密钥）' },
+            { method: 'GET', path: '/weather/now', auth: 'A', summary: '实况；Query location' },
+            { method: 'GET', path: '/weather/daily', auth: 'A', summary: '预报；Query location, days=7d|15d' },
+            { method: 'GET', path: '/weather/geo', auth: 'A', summary: '城市搜索；Query location=城市名' },
+        ],
+    },
+    {
         id: 'registration-pay-qr',
         name: '申请收款码',
         prefix: '/registration-pay-qr',
