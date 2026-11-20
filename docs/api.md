@@ -322,10 +322,11 @@ Manager 菜单：**日记 → 支付宝账单**（`#/diary/bill-import`）。
 |------|------|------|------|
 | GET | `/status` | A | 是否已配置；`data.auth`=`jwt`/`api_key`/`none`，不含密钥 |
 | GET | `/now` | A | Query `location`（LocationID 或 `lon,lat`）→ 实况 |
+| GET | `/hourly` | A | Query `location`，`hours`=`24h`/`72h`/`168h`（也可 `24`/`72`/`168`） |
 | GET | `/daily` | A | Query `location`，`days`=`7d`/`15d`（也可 `7`/`15`） |
 | GET | `/geo` | A | Query `location`=城市名，`number` 默认 10；默认 `range=cn` |
 
-`data` 为和风原始 JSON（含 `code` / `now` / `daily` / `location`）。
+`data` 为和风原始 JSON（含 `code` / `now` / `hourly` / `daily` / `location`）。
 
 服务端环境变量：`QWEATHER_HOST`、`QWEATHER_KID`、`QWEATHER_ISS`、`QWEATHER_SUB`、`QWEATHER_PRIVATE_KEY` 或 `QWEATHER_PRIVATE_KEY_FILE`。未配 JWT 时用系统配置 `hefeng_weather_api_host` + `hefeng_weather_api_key`。
 

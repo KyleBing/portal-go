@@ -7,6 +7,9 @@ export default {
     now(location: string) {
         return request('get', { location }, null, true, '/weather/now')
     },
+    hourly(location: string, hours = '24h') {
+        return request('get', { location, hours }, null, true, '/weather/hourly')
+    },
     daily(location: string, days: string) {
         return request('get', { location, days }, null, true, '/weather/daily')
     },

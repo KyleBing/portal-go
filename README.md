@@ -2,7 +2,7 @@
 
 Go 重写的 Portal API，并统一托管原 `manager-src` 管理后台。
 
-当前版本 `1.5.1`，变更见 [CHANGELOG.md](CHANGELOG.md)。
+当前版本 `1.5.2`，变更见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 功能
 

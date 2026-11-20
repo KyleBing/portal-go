@@ -95,6 +95,7 @@ export const API_MODULES: ApiModule[] = [
         endpoints: [
             { method: 'GET', path: '/weather/status', auth: 'A', summary: '是否已配置（不含密钥）' },
             { method: 'GET', path: '/weather/now', auth: 'A', summary: '实况；Query location' },
+            { method: 'GET', path: '/weather/hourly', auth: 'A', summary: '逐小时；Query location, hours=24h|72h|168h' },
             { method: 'GET', path: '/weather/daily', auth: 'A', summary: '预报；Query location, days=7d|15d' },
             { method: 'GET', path: '/weather/geo', auth: 'A', summary: '城市搜索；Query location=城市名' },
         ],

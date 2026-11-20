@@ -114,6 +114,19 @@ func FetchDaily(location string, days string) (map[string]interface{}, error) {
 	return qwGet("/v7/weather/"+days, q)
 }
 
+// FetchHourly 逐小时预报。hours 为和风路径：24h / 72h / 168h。
+func FetchHourly(location string, hours string) (map[string]interface{}, error) {
+	switch hours {
+	case "24h", "72h", "168h":
+	default:
+		return nil, fmt.Errorf("不支持的 hours=%s（可用 24h/72h/168h）", hours)
+	}
+	q := url.Values{}
+	q.Set("location", location)
+	q.Set("lang", "zh")
+	return qwGet("/v7/weather/"+hours, q)
+}
+
 func FetchGeo(location string, number string, rangeCN bool) (map[string]interface{}, error) {
 	q := url.Values{}
 	q.Set("location", location)

@@ -12,6 +12,7 @@ import (
 func Register(r *gin.RouterGroup) {
 	r.GET("/status", handleStatus)
 	r.GET("/now", handleNow)
+	r.GET("/hourly", handleHourly)
 	r.GET("/daily", handleDaily)
 	r.GET("/geo", handleGeo)
 }
@@ -33,6 +34,31 @@ func handleNow(c *gin.Context) {
 		return
 	}
 	data, err := FetchNow(loc)
+	if err != nil {
+		response.Error(c, data, err.Error())
+		return
+	}
+	response.Success(c, data, "ok")
+}
+
+func handleHourly(c *gin.Context) {
+	if _, ok := middleware.RequireUser(c); !ok {
+		return
+	}
+	loc := strings.TrimSpace(c.Query("location"))
+	if loc == "" {
+		response.Error(c, nil, "缺少 location")
+		return
+	}
+	hours := strings.TrimSpace(c.Query("hours"))
+	if hours == "" {
+		hours = "24h"
+	}
+	// 允许传 24 / 72 / 168
+	if !strings.HasSuffix(hours, "h") {
+		hours = hours + "h"
+	}
+	data, err := FetchHourly(loc, hours)
 	if err != nil {
 		response.Error(c, data, err.Error())
 		return
