@@ -1,5 +1,10 @@
 # 更新记录
 
+## v1.6.0 `2026-11-20`
+
+- 天气改为**和风官方路径透传**：`GET /portal/v7/*`、`/geo/*`、`/weather/v1/*`、`/airquality/*`、`/weatheralert/*`、`/solarradiation/*`（query 原样转发）
+- 保留短别名 `/weather/now|hourly|daily|geo|status`。设备请改打 `/v7/weather/24h`，不要用自造的 `/weather/hourly`
+
 ## v1.5.2 `2026-11-19`
 
 - 天气代理新增 `GET /weather/hourly`（和风 `24h`/`72h`/`168h`）

@@ -68,7 +68,7 @@
 | [文件](#文件-file-manager) | `/file-manager` | 本地上传 |
 | [七牛图床](#七牛图床-image-qiniu) | `/image-qiniu` | Token 与图片元数据 |
 | [点赞](#点赞-thumbs-up) | `/thumbs-up` | 站点点赞计数 |
-| [天气代理](#天气代理-weather) | `/weather` | 和风代理（服务端 JWT/Key） |
+| [天气代理](#天气代理-weather) | `/v7` `/geo` `/weather` | 和风官方路径透传 + 短别名 |
 | [安装](#安装-setup--init) | `/setup` `/init` | 首次安装引导 |
 
 鉴权图例：**P** 公开 · **A** 需登录 · **Admin** 管理员 · **Cond** 公开内容可匿名，否则需主人 · **Opt** 有 token 则带身份
@@ -314,19 +314,45 @@ Manager 菜单：**日记 → 支付宝账单**（`#/diary/bill-import`）。
 
 ---
 
-## 天气代理 `/weather`
+## 天气代理
 
-需登录 **A**。服务端用和风 JWT（环境变量）或回退 `system_config` 的 API Key 请求和风，客户端**不要**再带和风 Key。
+需登录 **A**。Portal 只做中转：把和风 JWT/Key 加在服务端，**路径、query 与和风官方一致**。响应仍包一层 `{ success, message, data }`，`data` 为和风原始 JSON。
 
-| 方法 | 路径 | 鉴权 | 说明 |
-|------|------|------|------|
-| GET | `/status` | A | 是否已配置；`data.auth`=`jwt`/`api_key`/`none`，不含密钥 |
-| GET | `/now` | A | Query `location`（LocationID 或 `lon,lat`）→ 实况 |
-| GET | `/hourly` | A | Query `location`，`hours`=`24h`/`72h`/`168h`（也可 `24`/`72`/`168`） |
-| GET | `/daily` | A | Query `location`，`days`=`7d`/`15d`（也可 `7`/`15`） |
-| GET | `/geo` | A | Query `location`=城市名，`number` 默认 10；默认 `range=cn` |
+客户端**不要**带和风 Key，只带 Portal `Authorization: Bearer`。
 
-`data` 为和风原始 JSON（含 `code` / `now` / `hourly` / `daily` / `location`）。
+### 官方路径（推荐）
+
+`GET /portal{和风 path}?{和风 query}` → `https://{QWEATHER_HOST}{path}?{query}`。
+
+允许的 path 前缀：
+
+| 前缀 | 对应和风 |
+|------|----------|
+| `/v7/*` | v7（LocationID）：实况 `/v7/weather/now`、逐小时 `/v7/weather/24h`（亦 `72h`/`168h`）、逐日 `/v7/weather/7d`（亦 `3d`/`10d`/`15d`/`30d`）、分钟降水、预警、指数、空气、天文、台风、海洋、时光机等 |
+| `/geo/*` | GeoAPI，如 `/geo/v2/city/lookup` |
+| `/weather/v1/*` | 现行经纬度预报，如 `/weather/v1/hourly/{lat}/{lon}` |
+| `/airquality/*` | 空气质量 v1 |
+| `/weatheralert/*` | 预警 v1 |
+| `/solarradiation/*` | 太阳辐射 |
+
+示例（与[和风逐小时 v7](https://dev.qweather.com/docs/api/weather/) 城市 24–168 小时同一路径）：
+
+```http
+GET /portal/v7/weather/24h?location=101120107&lang=zh
+Authorization: Bearer <portal-jwt>
+```
+
+和风**有**小时预报，官方路径是 `/v7/weather/24h`，**不是** `/weather/hourly`。新版网格接口是 `/weather/v1/hourly/{lat}/{lon}`（要经纬度，不用 LocationID）。
+
+### 短别名（兼容旧固件）
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/weather/status` | 是否已配置；`data.auth`=`jwt`/`api_key`/`none` |
+| GET | `/weather/now` | → `/v7/weather/now` |
+| GET | `/weather/hourly` | Query `hours`=`24h`/`72h`/`168h` → `/v7/weather/{hours}` |
+| GET | `/weather/daily` | Query `days`=`7d`/`15d`/… → `/v7/weather/{days}` |
+| GET | `/weather/geo` | → `/geo/v2/city/lookup` |
 
 服务端环境变量：`QWEATHER_HOST`、`QWEATHER_KID`、`QWEATHER_ISS`、`QWEATHER_SUB`、`QWEATHER_PRIVATE_KEY` 或 `QWEATHER_PRIVATE_KEY_FILE`。未配 JWT 时用系统配置 `hefeng_weather_api_host` + `hefeng_weather_api_key`。
 

@@ -115,6 +115,6 @@ func registerAll(rg *gin.RouterGroup) {
 	// 经典 /starve 库已下线，仅保留 starve-new
 	starvenew.Register(rg.Group("/starve-new"))
 
-	// 和风天气代理（服务端 JWT / API Key → 设备与客户端只带 Portal token）
-	weather.Register(rg.Group("/weather"))
+	// 和风天气代理：官方路径 /v7 /geo /weather/v1 … + 短别名 /weather/*
+	weather.Register(rg)
 }

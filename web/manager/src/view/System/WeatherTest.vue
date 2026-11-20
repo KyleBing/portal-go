@@ -24,7 +24,7 @@
             <div class="panel">
                 <div class="panel-head">
                     <div class="panel-title">城市搜索 Geo</div>
-                    <p class="panel-desc">GET /portal/weather/geo</p>
+                    <p class="panel-desc">GET /portal/geo/v2/city/lookup（和风官方路径）</p>
                 </div>
                 <div class="row">
                     <ElInput v-model="geoQuery" clearable placeholder="城市名，例如 杭州" @keyup.enter="runGeo" />
@@ -44,7 +44,7 @@
             <div class="panel">
                 <div class="panel-head">
                     <div class="panel-title">实况 / 预报</div>
-                    <p class="panel-desc">LocationID 或 lon,lat；点上方搜索结果可填入</p>
+                    <p class="panel-desc">官方路径 /v7/weather/now · 24h · 7d；LocationID 或 lon,lat</p>
                 </div>
                 <div class="row">
                     <ElInput v-model="locationId" clearable placeholder="LocationID，例如 101210101" />
@@ -54,6 +54,7 @@
                         <ElOption label="3 天" value="3d" />
                     </ElSelect>
                     <ElButton type="primary" :loading="nowLoading" @click="runNow">实况</ElButton>
+                    <ElButton :loading="hourlyLoading" @click="runHourly">24 小时</ElButton>
                     <ElButton :loading="dailyLoading" @click="runDaily">预报</ElButton>
                 </div>
             </div>
@@ -102,6 +103,7 @@ const geoList = ref<GeoItem[]>([])
 const locationId = ref('')
 const days = ref('7d')
 const nowLoading = ref(false)
+const hourlyLoading = ref(false)
 const dailyLoading = ref(false)
 
 const resultTitle = ref('')
@@ -168,6 +170,24 @@ async function runNow() {
         /* */
     } finally {
         nowLoading.value = false
+    }
+}
+
+async function runHourly() {
+    const loc = locationId.value.trim()
+    if (!loc) {
+        ElMessage.warning('请填写 LocationID')
+        return
+    }
+    hourlyLoading.value = true
+    try {
+        const res: any = await weatherApi.hourly(loc, '24h')
+        resultTitle.value = `逐小时 24h · ${loc}`
+        resultText.value = JSON.stringify(res.data || {}, null, 2)
+    } catch {
+        /* */
+    } finally {
+        hourlyLoading.value = false
     }
 }
 

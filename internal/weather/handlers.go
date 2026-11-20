@@ -8,13 +8,21 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Register 挂到 /weather
-func Register(r *gin.RouterGroup) {
+// Register 挂到 portal 根组：官方和风路径原样代理，另保留 /weather/* 短别名。
+func Register(rg *gin.RouterGroup) {
+	rg.GET("/v7/*path", handleOfficialProxy)
+	rg.GET("/geo/*path", handleOfficialProxy)
+	rg.GET("/airquality/*path", handleOfficialProxy)
+	rg.GET("/weatheralert/*path", handleOfficialProxy)
+	rg.GET("/solarradiation/*path", handleOfficialProxy)
+
+	r := rg.Group("/weather")
 	r.GET("/status", handleStatus)
 	r.GET("/now", handleNow)
 	r.GET("/hourly", handleHourly)
 	r.GET("/daily", handleDaily)
 	r.GET("/geo", handleGeo)
+	r.GET("/v1/*path", handleOfficialProxy)
 }
 
 func handleStatus(c *gin.Context) {
